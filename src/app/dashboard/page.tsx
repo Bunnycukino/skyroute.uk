@@ -59,32 +59,29 @@ export default function DashboardPage() {
           <Link href="/logistic" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
             <span>📦</span> C208 Input ( Logistic Input )
           </Link>
-          <Link href="/in-bond" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>📄</span> In Bond Control Sheet
-          </Link>
           <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>📋</span> All Entries
+            <span>🗂️</span> All Entries
           </Link>
-          <div className="pt-4 mt-4 border-t border-border">
-            <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-sm text-muted-foreground hover:text-destructive transition-colors w-full text-left">
-              <span>🚪</span> Wyloguj
-            </button>
-          </div>
         </nav>
+        <div className="pt-4 mt-4 border-t border-border">
+          <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-sm text-muted-foreground w-full">
+            <span>🚪</span> Wyloguj
+          </button>
+        </div>
       </aside>
       <main className="flex-1 p-8 overflow-y-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">System C209 - Ramp & Logistic Operations</p>
+          <p className="text-muted-foreground">System C209 - Ramp &amp; Logistic Operations</p>
         </header>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Wszystkie wpisy', value: stats.totalEntries, icon: '📋' },
-            { label: 'Dzisiaj', value: stats.todayEntries, icon: '📅' },
-            { label: 'Wygasają wkrótce', value: stats.expiringSoon, color: 'text-orange-500', icon: '⏳' },
-            { label: 'Loty dzisiaj', value: stats.totalFlights, icon: '✈️' }
-          ].map((stat, i) => (
-            <div key={i} className="bg-card border border-border p-6 rounded-2xl shadow-sm">
+            { label: 'Wszystkie wpisy', value: stats.totalEntries, icon: '📋', color: '' },
+            { label: 'Dzisiaj', value: stats.todayEntries, icon: '📅', color: '' },
+            { label: 'Wygasają wkrótce', value: stats.expiringSoon, icon: '⏳', color: stats.expiringSoon > 0 ? 'text-orange-400' : '' },
+            { label: 'Loty dzisiaj', value: stats.totalFlights, icon: '✈️', color: '' },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-card border border-border rounded-2xl shadow-sm p-4">
               <div className="flex justify-between items-start mb-2">
                 <span className="text-muted-foreground text-sm font-medium">{stat.label}</span>
                 <span className="text-lg">{stat.icon}</span>
@@ -101,7 +98,6 @@ export default function DashboardPage() {
             <div className="flex gap-2">
               <Link href="/ramp" className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-bold hover:opacity-90">+ Ramp</Link>
               <Link href="/logistic" className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg font-bold hover:opacity-90">+ Logistic</Link>
-              <Link href="/in-bond" className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded-lg font-bold hover:opacity-90">In Bond</Link>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -130,7 +126,7 @@ export default function DashboardPage() {
                   recentEntries.map((entry: any) => {
                     const expiry = getExpiryStatus(entry.created_at, entry.type);
                     const date = new Date(entry.created_at);
-                    const monthPrefix = date.toLocaleString('en-US', { month: 'short' }).toUpperCase() + '-' + date.getFullYear().toString().slice(-2);
+                    const monthPrefix = getMonthPrefix(date);
                     return (
                       <tr key={entry.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="px-4 py-3 font-mono font-bold text-primary">{entry.c209_number || '-'}</td>
@@ -142,10 +138,10 @@ export default function DashboardPage() {
                         <td className="px-4 py-3 font-mono text-muted-foreground">{entry.c208_number || '-'}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
-                            {entry.type === 'ramp_input' && <span className="bg-gray-500/20 text-gray-400 text-[9px] px-1.5 py-0.5 rounded border border-gray-500/30 font-bold uppercase">RAMP</span>}
-                            {entry.type === 'logistic_input' && <span className="bg-teal-500/20 text-teal-400 text-[9px] px-1.5 py-0.5 rounded border border-teal-500/30 font-bold uppercase">LOG</span>}
-                            {entry.is_new_build && <span className="bg-blue-500/20 text-blue-300 text-[9px] px-1.5 py-0.5 rounded border border-blue-500/30 font-bold uppercase">NEW</span>}
-                            {entry.is_rw_flight && <span className="bg-purple-500/20 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/30 font-bold uppercase">RW</span>}
+                            {entry.type === 'ramp_input' && <span className="bg-gray-500/20 text-gray-400 text-[9px] px-1.5 py-0.5 rounded border border-gray-500/30">RAMP</span>}
+                            {entry.type === 'logistic_input' && <span className="bg-teal-500/20 text-teal-400 text-[9px] px-1.5 py-0.5 rounded border border-teal-500/30">LOG</span>}
+                            {entry.is_new_build && <span className="bg-blue-500/20 text-blue-300 text-[9px] px-1.5 py-0.5 rounded border border-blue-500/30">NEW</span>}
+                            {entry.is_rw_flight && <span className="bg-purple-500/20 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/30">RW</span>}
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium uppercase">{entry.signature || '-'}</td>
@@ -170,4 +166,8 @@ export default function DashboardPage() {
       </main>
     </div>
   );
+}
+function getMonthPrefix(date: Date): string {
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return months[date.getMonth()] + '-' + String(date.getFullYear()).slice(-2);
 }
