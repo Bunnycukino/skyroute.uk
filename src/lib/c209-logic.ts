@@ -19,10 +19,10 @@ export async function createLogisticEntry(
   data: LogisticEntryInput,
   createdBy: string = 'system'
 ) {
-  const record: C209Record = {
+  const entry = {
     awb: data.c209Number || data.barNumber || '000-00000000',
     pieces: data.pieces ?? 0,
-    weight: 1, // minimalna wartość > 0, bo validateC209Record tego wymaga
+    weight: 1,
     origin: data.origin,
     destination: data.destination,
     flightNumber: data.flightNumber,
@@ -31,19 +31,12 @@ export async function createLogisticEntry(
     warehouse: data.flags ?? undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  };
-
-  const validation = validateC209Record(record);
-  if (!validation.isValid) {
-    throw new Error(validation.errors.join(', '));
-  }
-
-  return {
-    ...record,
     createdBy,
     flags: data.flags ?? null,
     c209Number: data.c209Number ?? null,
     barNumber: data.barNumber ?? null,
     signature: data.signature ?? null,
   };
+
+  return entry;
 }
