@@ -2,27 +2,34 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+// Mirrors VBA LOGISTIC INPUT sheet (A2=C209, B2=Flight, C2=Sign, D2=Date, F2=BarNumber, G2=Pieces)
+// Also matches VBA AIRLINES lookup table on the sheet
+const AIRLINES = [
+  { name: 'TUI Airways',       prefix: 'TA',   rw: 'RWTA'   },
+  { name: 'Ryanair',           prefix: 'RYR',  rw: 'RWRYR'  },
+  { name: 'EasyJet',           prefix: 'EZ',   rw: 'RWEZ'   },
+  { name: 'Singapore Airlines',prefix: 'POLY', rw: 'RWPOLY' },
+  { name: 'Emirates',          prefix: 'EK',   rw: 'RWEK'   },
+];
+
 export default function LogisticInputPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<{c209: string; c208: string} | null>(null);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    c209_number: '',
-    container_code: '',
-    pieces: '',
-    flight_number: '',
-    signature: '',
+    c209_number: '',       // A2 - C209 number (or 'NEW BUILD')
+    flight_number: '',     // B2 - Flight number
+    signature: '',         // C2 - Signature
+    date_received: new Date().toISOString().split('T')[0], // D2 - Flight date
+    bar_number: '',        // F2 - Bar number (for NEW BUILD only)
+    pieces: '',            // G2 - Pieces (for NEW BUILD only)
     notes: '',
-    is_new_build: false
   });
 
-  const AIRLINES = [
-    { name: 'TUI Airways', prefix: 'TA', rw: 'RWTA' },
-    { name: 'Ryanair', prefix: 'RYR', rw: 'RWRYR' },
-    { name: 'EasyJet', prefix: 'EZ', rw: 'RWEZ' },
-    { name: 'Singapore Airlines', prefix: 'POLY', rw: 'RWPOLY' },
-    { name: 'Emirates', prefix: 'EK', rw: 'RWEK' },
-  ];
+  // Whether this is a NEW BUILD entry (mirrors VBA: isNewBuild = c209Number = 'NEW BUILD')
+  const isNewBuild = formData.c209_number.toUpperCase().trim() === 'NEW BUILD';
+  // Whether this is a RW (rewarehouse) flight (mirrors VBA: UCase(Left(flightNumber, 2)) = 'RW')
+  const isRW = formData.flight_number.toUpperCase().trim().startsWith('RW');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,8 +38,9 @@ export default function LogisticInputPage() {
     setSuccess(null);
 
     const c209Input = formData.c209_number.trim().toUpperCase();
-    if (!c209Input) {
-      setError('C209 Number is required - enter the RAMP entry number first.');
+    // Mirrors VBA: If flightNumber = '' Then MsgBox ... : GoTo CleanUp
+    if (!formData.flight_number.trim()) {
+      setError('Flight Number is required (LOGISTIC INPUT B2).');
       setLoading(false);
       return;
     }
@@ -44,18 +52,29 @@ export default function LogisticInputPage() {
         body: JSON.stringify({
           action: 'logistic_input',
           c209_number: c209Input,
-          container_code: formData.container_code.toUpperCase(),
-          pieces: parseInt(formData.pieces) || 0,
           flight_number: formData.flight_number.toUpperCase(),
           signature: formData.signature.toUpperCase(),
+          date_received: formData.date_received,
+          // Bar number and pieces only relevant for NEW BUILD
+          container_code: isNewBuild ? formData.bar_number.toUpperCase() : '',
+          bar_number: isNewBuild ? formData.bar_number.toUpperCase() : '',
+          pieces: parseInt(formData.pieces) || 0,
           notes: formData.notes,
-          is_new_build: formData.is_new_build
+          is_new_build: isNewBuild,
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Blad zapisu');
+      if (!res.ok) throw new Error(data.error || 'Save error');
       setSuccess({ c209: data.c209, c208: data.c208 });
-      setFormData({ c209_number: '', container_code: '', pieces: '', flight_number: '', signature: '', notes: '', is_new_build: false });
+      setFormData({
+        c209_number: '',
+        flight_number: '',
+        signature: '',
+        date_received: new Date().toISOString().split('T')[0],
+        bar_number: '',
+        pieces: '',
+        notes: '',
+      });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -63,164 +82,172 @@ export default function LogisticInputPage() {
     }
   }
 
-  const th = "px-4 py-2 border border-border bg-muted text-[10px] font-bold uppercase text-left";
-  const td = "p-0 border border-border";
-  const inp = "w-full px-3 py-2 bg-transparent outline-none text-sm font-bold";
-
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-r border-border flex flex-col">
-        <div className="p-6 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">SR</div>
-            <span className="font-bold text-sm text-foreground">SkyRoute.uk</span>
-          </Link>
+    <div className="min-h-screen bg-gray-950 text-white p-6">
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-blue-400">LOGISTIC INPUT</h1>
+          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white">← Dashboard</Link>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent text-sm text-muted-foreground"><span>📊</span> Dashboard</Link>
-          <Link href="/ramp" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent text-sm text-muted-foreground"><span>✈️</span> C209 Input ( Ramp Input )</Link>
-          <Link href="/logistic" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm"><span>📦</span> C208 Input ( Logistic Input )</Link>
-          <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent text-sm text-muted-foreground"><span>📋</span> All Entries</Link>
-        </nav>
-      </aside>
+        <p className="text-gray-400 text-sm mb-6">
+          Mirrors <strong>C208 INPUT</strong> sheet — generates C208 outbound number and links to existing C209 RAMP entry.
+        </p>
 
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
+        {/* Airline reference table - mirrors VBA sheet lookup table */}
+        <div className="bg-gray-900 rounded-lg p-4 mb-6 text-xs">
+          <p className="text-gray-400 font-semibold mb-2">AIRLINE PREFIX REFERENCE</p>
+          <table className="w-full">
+            <thead>
+              <tr className="text-gray-500">
+                <th className="text-left">Airline</th>
+                <th className="text-right">Prefix</th>
+                <th className="text-right">RW Prefix</th>
+              </tr>
+            </thead>
+            <tbody>
+              {AIRLINES.map(a => (
+                <tr key={a.name} className="border-t border-gray-800">
+                  <td className="py-1 text-gray-300">{a.name}</td>
+                  <td className="text-right text-yellow-300">{a.prefix}</td>
+                  <td className="text-right text-orange-300">{a.rw}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* A2 - C209 Number (or NEW BUILD) */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">
+              C209 Number <span className="text-gray-500">(or type NEW BUILD)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.c209_number}
+              onChange={e => setFormData(p => ({ ...p, c209_number: e.target.value }))}
+              placeholder="e.g. MAR0001 or NEW BUILD"
+              className="w-full bg-gray-800 rounded px-3 py-2 text-white"
+            />
+            {isNewBuild && (
+              <p className="text-yellow-400 text-xs mt-1">⚠️ NEW BUILD mode — bar number and pieces required below</p>
+            )}
+            {isRW && (
+              <p className="text-orange-400 text-xs mt-1">⚠️ RW flight detected — C208 will be set to &quot;RW&quot;</p>
+            )}
+          </div>
+
+          {/* B2 - Flight Number */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Flight Number (B2)</label>
+            <input
+              type="text"
+              value={formData.flight_number}
+              onChange={e => setFormData(p => ({ ...p, flight_number: e.target.value }))}
+              placeholder="e.g. EK123 or RWEK123"
+              required
+              className="w-full bg-gray-800 rounded px-3 py-2 text-white"
+            />
+          </div>
+
+          {/* C2 - Signature */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Signature (C2)</label>
+            <input
+              type="text"
+              value={formData.signature}
+              onChange={e => setFormData(p => ({ ...p, signature: e.target.value }))}
+              placeholder="Initials"
+              className="w-full bg-gray-800 rounded px-3 py-2 text-white"
+            />
+          </div>
+
+          {/* D2 - Flight Date */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Flight Date (D2)</label>
+            <input
+              type="date"
+              value={formData.date_received}
+              onChange={e => setFormData(p => ({ ...p, date_received: e.target.value }))}
+              className="w-full bg-gray-800 rounded px-3 py-2 text-white"
+            />
+          </div>
+
+          {/* F2 + G2 - Bar Number and Pieces (NEW BUILD only, or optional override) */}
+          {/* Mirrors VBA: logisticBarNumber (F2) and logisticPieces (G2) */}
+          <div className={`grid grid-cols-2 gap-3 ${!isNewBuild ? 'opacity-50' : ''}`}>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Logistic Input (C208)</h1>
-              <p className="text-sm text-muted-foreground mt-1">Link C208 to an existing C209 RAMP entry</p>
+              <label className="block text-sm text-gray-400 mb-1">
+                Bar Number (F2){isNewBuild ? '' : ' — NEW BUILD only'}
+              </label>
+              <input
+                type="text"
+                value={formData.bar_number}
+                onChange={e => setFormData(p => ({ ...p, bar_number: e.target.value }))}
+                placeholder="e.g. POLY"
+                disabled={!isNewBuild}
+                className="w-full bg-gray-800 rounded px-3 py-2 text-white disabled:cursor-not-allowed"
+              />
             </div>
-            <div className="text-right">
-              <span className="text-primary font-black text-2xl italic">dnata</span>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase">catering</p>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                Pieces (G2){isNewBuild ? '' : ' — NEW BUILD only'}
+              </label>
+              <input
+                type="number"
+                value={formData.pieces}
+                onChange={e => setFormData(p => ({ ...p, pieces: e.target.value }))}
+                placeholder="0"
+                disabled={!isNewBuild}
+                className="w-full bg-gray-800 rounded px-3 py-2 text-white disabled:cursor-not-allowed"
+              />
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* C209 lookup - most important field */}
-            <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-6">
-              <label className="text-[10px] font-black uppercase tracking-widest text-amber-700 block mb-2">C209 Number (from RAMP entry) *</label>
-              <input
-                required
-                className="w-full bg-white border-2 border-amber-300 rounded-lg px-4 py-3 font-black text-xl uppercase focus:border-amber-500 outline-none tracking-widest"
-                placeholder="e.g. FEB0001"
-                value={formData.c209_number}
-                onChange={e => setFormData({...formData, c209_number: e.target.value})}
-              />
-              <p className="text-xs text-amber-600 mt-2 font-medium">Enter the C209 number from the RAMP Input. C208 will be auto-generated and linked to this entry.</p>
-            </div>
+          {/* Notes */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Notes</label>
+            <input
+              type="text"
+              value={formData.notes}
+              onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Optional"
+              className="w-full bg-gray-800 rounded px-3 py-2 text-white"
+            />
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className={th}>Container Code</th>
-                    <th className={th}>Pieces</th>
-                    <th className={th}>Flight Number</th>
-                    <th className={th}>C208 (auto)</th>
-                    <th className={th}>Signature</th>
-                    <th className={th}>Comments</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className={td + " bg-yellow-400/20"}>
-                      <input required className={inp + " uppercase"} placeholder="e.g. EK001"
-                        value={formData.container_code}
-                        onChange={e => setFormData({...formData, container_code: e.target.value})}
-                      />
-                    </td>
-                    <td className={td + " bg-yellow-400/20 w-24"}>
-                      <input required type="number" className={inp} placeholder="0"
-                        value={formData.pieces}
-                        onChange={e => setFormData({...formData, pieces: e.target.value})}
-                      />
-                    </td>
-                    <td className={td + " bg-yellow-400/20"}>
-                      <input required className={inp + " uppercase"} placeholder="e.g. EK123"
-                        value={formData.flight_number}
-                        onChange={e => setFormData({...formData, flight_number: e.target.value})}
-                      />
-                    </td>
-                    <td className={td + " bg-gray-100"}>
-                      <div className={inp + " text-muted-foreground italic text-xs"}>
-                        {success ? success.c208 : 'Auto-generated'}
-                      </div>
-                    </td>
-                    <td className={td + " bg-yellow-400/20"}>
-                      <input required className={inp + " uppercase"} placeholder="Initials"
-                        value={formData.signature}
-                        onChange={e => setFormData({...formData, signature: e.target.value})}
-                      />
-                    </td>
-                    <td className={td + " bg-yellow-400/20"}>
-                      <input className={inp} placeholder="..."
-                        value={formData.notes}
-                        onChange={e => setFormData({...formData, notes: e.target.value})}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          {error && (
+            <div className="bg-red-900/40 border border-red-500 rounded p-3 text-red-300 text-sm">
+              {error}
             </div>
+          )}
 
-            <div className="flex items-center justify-between gap-4 bg-muted/20 p-4 border border-border rounded-lg">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${formData.is_new_build ? 'bg-blue-500' : 'bg-muted'}`}>
-                  <div className={`w-4 h-4 bg-white rounded-full transition-transform ${formData.is_new_build ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                </div>
-                <input type="checkbox" className="hidden" checked={formData.is_new_build} onChange={e => setFormData({...formData, is_new_build: e.target.checked})} />
-                <span className="text-sm font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">New build only</span>
-              </label>
-              <button disabled={loading} className="bg-primary text-primary-foreground px-12 py-3 rounded-lg font-black uppercase tracking-tighter shadow-lg hover:opacity-90 disabled:opacity-50">
-                {loading ? 'Adding...' : 'AddEntry (C208)'}
-              </button>
+          {success && (
+            <div className="bg-green-900/40 border border-green-500 rounded p-4 text-sm">
+              <p className="text-green-300 font-bold mb-2">LOGISTIC data saved!</p>
+              <p>C209: <span className="font-mono text-yellow-300">{success.c209}</span></p>
+              <p>C208: <span className="font-mono text-blue-300">{success.c208}</span></p>
+              {success.c208 === 'RW' && (
+                <p className="text-orange-300 mt-1">Bar marked as REWAREHOUSED</p>
+              )}
+              <Link
+                href={`/in-bond?c209=${success.c209}`}
+                className="mt-3 inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+              >
+                Print InBond Form
+              </Link>
             </div>
+          )}
 
-            {error && <div className="p-4 bg-destructive/10 text-destructive rounded-lg text-sm font-bold border border-destructive/20">{error}</div>}
-            {success && (
-              <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-green-600 font-black text-lg">Entry added to LOG!</p>
-                <p className="text-sm text-green-700 mt-1">C209: <strong>{success.c209}</strong> &nbsp;|&nbsp; C208: <strong>{success.c208}</strong></p>
-              </div>
-            )}
-
-            <div className="mt-12">
-              <h3 className="text-[10px] font-black uppercase text-muted-foreground mb-3 tracking-widest">Airlines Reference Data</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                  <table className="w-full border-collapse text-xs border border-border overflow-hidden rounded-lg">
-                    <thead>
-                      <tr className="bg-green-600 text-white font-black uppercase tracking-widest">
-                        <th className="p-3 border border-green-700 text-left">AIRLINE</th>
-                        <th className="p-3 border border-green-700 text-left">FLIGHT PREFIX</th>
-                        <th className="p-3 border border-green-700 text-left">PREFIX RW EXAMPLE</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-card">
-                      {AIRLINES.map((a, i) => (
-                        <tr key={i} className="hover:bg-muted/50 border-b border-border transition-colors">
-                          <td className="p-3 font-bold text-foreground">{a.name}</td>
-                          <td className="p-3 font-mono text-muted-foreground font-bold">{a.prefix}</td>
-                          <td className="p-3 font-mono text-primary font-black italic">{a.rw}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="bg-primary/5 border-2 border-dashed border-primary/20 p-8 rounded-xl flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <span className="text-2xl font-black text-primary italic">RW</span>
-                  </div>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground mb-2 tracking-widest">Rewarehouse Protocol</p>
-                  <p className="text-sm font-black leading-tight tracking-tighter">ADD PREFIX <span className="text-primary italic">RW</span> TO ALL REWAREHOUSE FLIGHT NUMBERS</p>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-      </main>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded font-semibold"
+          >
+            {loading ? 'Saving...' : 'AddEntry'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
