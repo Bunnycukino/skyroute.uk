@@ -2,6 +2,12 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import supabase from '@/lib/db';
 
+import {
+  addToExpiryTracker,
+  removeFromExpiryTracker,
+  checkExpiredC209Numbers,
+  fillReallocationRegister,
+} from '@/lib/c209-logic';
 // ── helpers ────────────────────────────────────────────────────────────
 function getUser(req: NextRequest): string | null {
   const cookie = req.cookies.get('skyroute_user');
@@ -91,10 +97,21 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error) throw error;
+
+          // VBA AddEntry: Add to Expiry Tracker + check expired C209 (48h)
+    await addToExpiryTracker(c209, entryDate);
+    const expiredRamp = await checkExpiredC209Numbers();
+    await fillReallocationRegister();
+
       return NextResponse.json({ success: true, c209, entry: result });
     }
 
     // ── LOGISTIC INPUT ────────────────────────────────────────────────
+await addToExpiryTracker(c209, entryDate);
+    const expiredC209 = await checkExpiredC209Numbers();
+    // Optionally run fillReallocationRegister here too
+    await fillReallocationRegister();
+
     // Mirrors VBA AddEntry logistic branch:
     //   - If c209 == 'NEW BUILD': create full new row with c209='NEW BUILD', c208=generated
     //   - If RW flight prefix: c208='RW'
