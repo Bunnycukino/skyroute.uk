@@ -23,6 +23,7 @@ export default function RampInputPage() {
     setLoading(true);
     setError('');
     setSuccess(null);
+
     try {
       const payload = {
         action: 'ramp_input',
@@ -35,13 +36,16 @@ export default function RampInputPage() {
         notes: formData.notes,
         date_received: formData.date_received
       };
+
       const res = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Blad zapisu');
+
       setSuccess({
         c209: data.c209,
         bar: payload.container_code,
@@ -51,6 +55,7 @@ export default function RampInputPage() {
         notes: payload.notes,
         date: new Date(payload.date_received).toLocaleDateString('en-GB')
       });
+
       setFormData({
         bar_number: '',
         pieces: '',
@@ -69,32 +74,46 @@ export default function RampInputPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-slate-950 p-6 flex flex-col border-r border-white/5">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/20">SR</div>
-          <div className="font-black text-white tracking-tighter">SkyRoute.uk</div>
+    <div className="min-h-screen bg-background flex">
+      <aside className="w-64 bg-card border-r border-border flex flex-col">
+        <div className="p-6 border-b border-border">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">SR</div>
+            <div>
+              <h1 className="font-bold text-foreground text-sm">SkyRoute.uk</h1>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">C209 System</p>
+            </div>
+          </Link>
         </div>
-        <nav className="space-y-2">
-          <Link href="/dashboard" className="block p-3 rounded-lg text-slate-400 hover:bg-white/5">Dashboard</Link>
-          <Link href="/ramp" className="block p-3 rounded-lg bg-blue-600 text-white font-bold">Ramp Input (C209)</Link>
-          <Link href="/logistic" className="block p-3 rounded-lg text-slate-400 hover:bg-white/5">Logistic Input (C208)</Link>
-          <Link href="/entries" className="block p-3 rounded-lg text-slate-400 hover:bg-white/5">All Entries</Link>
+        <nav className="flex-1 p-4 space-y-1">
+          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
+            <span>📊</span> Dashboard
+          </Link>
+          <Link href="/ramp" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm">
+            <span>✈️</span> C209 Input ( Ramp Input )
+          </Link>
+          <Link href="/logistic" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
+            <span>📦</span> C208 Input ( Logistic Input )
+          </Link>
+          <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
+            <span>🗂️</span> All Entries
+          </Link>
+          <Link href="/sheets" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground border-t border-border/50 pt-3 mt-3">
+            <span>📑</span> VBA Sheets View
+          </Link>
         </nav>
       </aside>
 
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+      <main className="flex-1 p-8 bg-slate-50/50 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-black text-white tracking-tight">C209 RAMP INPUT</h1>
-            <p className="text-slate-400 font-medium">Register incoming containers - C209 auto-generated</p>
-          </div>
+          <header className="mb-8">
+            <h1 className="text-4xl font-black tracking-tight text-slate-900">C209 RAMP INPUT</h1>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-1">Register incoming containers - C209 auto-generated</p>
+          </header>
 
-          <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/10">
-            <div className="p-8 space-y-6">
-
-              {/* Row 1: Bar Number + Pieces */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="bg-white border-2 border-slate-100 rounded-[32px] shadow-2xl shadow-slate-200/50 overflow-hidden">
+            <div className="p-8 md:p-12 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bar Number</label>
                   <input
@@ -118,8 +137,7 @@ export default function RampInputPage() {
                 </div>
               </div>
 
-              {/* Row 2: Flight Number + Date */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Flight Number</label>
                   <input
@@ -141,8 +159,7 @@ export default function RampInputPage() {
                 </div>
               </div>
 
-              {/* Row 3: Origin + Destination */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Origin (e.g. MAN)</label>
                   <input
@@ -163,7 +180,6 @@ export default function RampInputPage() {
                 </div>
               </div>
 
-              {/* Row 4: Comments */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Comments (e.g. no seal, cart 13)</label>
                 <textarea
@@ -173,7 +189,6 @@ export default function RampInputPage() {
                 />
               </div>
 
-              {/* Row 5: Signature */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Signature (Initials)</label>
                 <input
@@ -185,7 +200,6 @@ export default function RampInputPage() {
                   onChange={e => setFormData({...formData, signature: e.target.value})}
                 />
               </div>
-
             </div>
 
             {error && (
@@ -204,21 +218,24 @@ export default function RampInputPage() {
           </form>
 
           {success && (
-            <div className="mt-8 bg-green-500 p-8 rounded-3xl shadow-2xl animate-in zoom-in">
+            <div className="mt-8 bg-green-500 p-8 rounded-[32px] shadow-2xl animate-in zoom-in">
               <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                 <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center"><CheckCircle2 className="text-green-500 w-10 h-10" /></div>
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="text-green-500 w-10 h-10" />
+                  </div>
                   <div>
                     <div className="text-white/80 text-[10px] font-black uppercase tracking-widest">Registration Successful</div>
                     <div className="text-4xl font-black text-white tracking-tighter">C209: {success.c209}</div>
-                    <div className="text-white/70 text-sm mt-1">{success.bar} &bull; {success.flight} &bull; {success.pieces} pcs &bull; {success.date}</div>
+                    <div className="text-white/70 text-sm mt-1">{success.bar} • {success.flight} • {success.pieces} pcs • {success.date}</div>
                   </div>
                 </div>
                 <Link
                   href={`/in-bond?c209=${success.c209}&bar=${success.bar}&pieces=${success.pieces}&sig=${success.signature}&notes=${encodeURIComponent(success.notes)}&date=${success.date}&autoPrint=true`}
                   className="bg-white text-green-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-3"
                 >
-                  <Printer /> Print Official Form
+                  <Printer />
+                  Print Official Form
                 </Link>
               </div>
             </div>
