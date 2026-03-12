@@ -241,6 +241,12 @@ await fillReallocationRegister();
         .single();
 
       if (updateError) throw updateError;
+
+          // VBA AddEntry: Remove from Expiry + check expired + fill reallocation
+    await removeFromExpiryTracker(existing.c209_number);
+    const expiredLog = await checkExpiredC209Numbers();
+    await fillReallocationRegister();
+
       return NextResponse.json({ success: true, c209: existing.c209_number, c208, entry: updated });
     }
 
