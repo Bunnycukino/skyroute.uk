@@ -70,3 +70,44 @@ CREATE INDEX IF NOT EXISTS idx_entries_created_at ON entries (created_at DESC);
 -- outbound_pieces     INTEGER (mirrors VBA COL_NEW_PIECES)
 -- updated_by          TEXT
 -- updated_at          TIMESTAMPTZ
+
+-- ============================================================
+-- C209 Expiry Tracker (mirrors VBA SH_EXPIRY_TRACKER)
+-- Tracks C209 numbers that haven't been used within 48h
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.expiry_tracker (
+  id BIGSERIAL PRIMARY KEY,
+  c209_number TEXT NOT NULL,
+  creation_date TIMESTAMPTZ NOT NULL,
+  last_checked TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Expired')),
+  inserted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_expiry_tracker_c209
+  ON public.expiry_tracker (c209_number);
+
+CREATE INDEX IF NOT EXISTS idx_expiry_tracker_status
+  ON public.expiry_tracker (status);
+
+-- ============================================================
+-- Reallocation Register (mirrors VBA SH_REALLOCATION)
+-- Auto-filled from entries table by C208 number lookup
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reallocation_register (
+  id BIGSERIAL PRIMARY KEY,
+  bar_number TEXT,
+  c209_number TEXT,
+  flight TEXT,
+  flight_date DATE,
+  destination TEXT,
+  c208_number TEXT,
+  base TEXT,
+  inserted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_realloc_c208
+  ON public.reallocation_register (c208_number);
+
+CREATE INDEX IF NOT EXISTS idx_realloc_c209
+  ON public.reallocation_register (c209_number);
