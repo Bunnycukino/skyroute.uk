@@ -165,6 +165,9 @@ await addToExpiryTracker(c209, entryDate);
           .single();
 
         if (error) throw error;
+        const expiredNew = await checkExpiredC209Numbers();
+await fillReallocationRegister();
+
         return NextResponse.json({ success: true, c209: 'NEW BUILD', c208, entry: result });
       }
 
@@ -250,6 +253,10 @@ await addToExpiryTracker(c209, entryDate);
 // ── GET ─────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const user = getUser(req);
+  await removeFromExpiryTracker(existing.c209_number);
+const expiredLog = await checkExpiredC209Numbers();
+await fillReallocationRegister();
+
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
