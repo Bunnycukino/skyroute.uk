@@ -8,7 +8,8 @@ import {
   checkExpiredC209Numbers,
   fillReallocationRegister,
 } from '@/lib/c209-logic';
-// ── helpers ────────────────────────────────────────────────────────────
+
+// ── helpers ──────────────────────────────────────────────────────────────
 function getUser(req: NextRequest): string | null {
   const cookie = req.cookies.get('skyroute_user');
   return cookie ? cookie.value : null;
@@ -53,7 +54,7 @@ function buildNumber(prefix: string, seq: number): string {
   return prefix + String(seq).padStart(4, '0');
 }
 
-// ── POST ───────────────────────────────────────────────────────────────
+// ── POST ─────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const user = getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,24 +99,19 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
-          // VBA AddEntry: Add to Expiry Tracker + check expired C209 (48h)
-    await addToExpiryTracker(c209, entryDate);
-    const expiredRamp = await checkExpiredC209Numbers();
-    await fillReallocationRegister();
+      // VBA AddEntry: Add to Expiry Tracker + check expired C209 (48h)
+      await addToExpiryTracker(c209, entryDate);
+      await checkExpiredC209Numbers();
+      await fillReallocationRegister();
 
       return NextResponse.json({ success: true, c209, entry: result });
     }
 
-    // ── LOGISTIC INPUT ────────────────────────────────────────────────
-await addToExpiryTracker(c209, entryDate);
-    const expiredC209 = await checkExpiredC209Numbers();
-    // Optionally run fillReallocationRegister here too
-    await fillReallocationRegister();
-
+    // ── LOGISTIC INPUT ─────────────────────────────────────────────────
     // Mirrors VBA AddEntry logistic branch:
-    //   - If c209 == 'NEW BUILD': create full new row with c209='NEW BUILD', c208=generated
-    //   - If RW flight prefix: c208='RW'
-    //   - Otherwise: find existing C209 row, generate C208, UPDATE that row
+    // - If c209 == 'NEW BUILD': create full new row with c209='NEW BUILD', c208=generated
+    // - If RW flight prefix: c208='RW'
+    // - Otherwise: find existing C209 row, generate C208, UPDATE that row
     if (action === 'logistic_input') {
       const c209Input = (body.c209_number || '').toUpperCase().trim();
       const flightNumber = (body.flight_number || '').toUpperCase().trim();
@@ -132,7 +128,7 @@ await addToExpiryTracker(c209, entryDate);
         );
       }
 
-      // ── NEW BUILD path ───────────────────────────────────────────
+      // ── NEW BUILD path ────────────────────────────────────────────
       // Mirrors VBA: isNewBuild = True => create full row immediately
       if (c209Input === 'NEW BUILD') {
         const seq208 = await getNextSequence('c208', entryDate);
@@ -165,13 +161,14 @@ await addToExpiryTracker(c209, entryDate);
           .single();
 
         if (error) throw error;
-        const expiredNew = await checkExpiredC209Numbers();
-await fillReallocationRegister();
+
+        await checkExpiredC209Numbers();
+        await fillReallocationRegister();
 
         return NextResponse.json({ success: true, c209: 'NEW BUILD', c208, entry: result });
       }
 
-      // ── Normal LOGISTIC path: find existing C209 ramp row ────────
+      // ── Normal LOGISTIC path: find existing C209 ramp row ──────────
       // Mirrors VBA: FindC209Row => updates columns 9-16 of that row
       const { data: existing, error: findError } = await supabase
         .from('entries')
@@ -213,7 +210,6 @@ await fillReallocationRegister();
       }
 
       // Bar number / pieces: use logistic input if provided, else fall back to ramp values
-      // Mirrors VBA: If logisticBarNumber <> '' Then originalBarNumber = logisticBarNumber
       const barNumber = (body.container_code || body.bar_number || '').toUpperCase() || existing.bar_number;
       const pieces = body.pieces || existing.pieces || 0;
 
@@ -223,10 +219,8 @@ await fillReallocationRegister();
         .from('entries')
         .update({
           c208_number: c208,
-          // outbound ("new") fields mapped to these columns:
           flags: (body.flags || existing.flags || '').toUpperCase() || null,
           is_rw_flight: isRW,
-          // We store outbound details in dedicated columns:
           outbound_flight: flightNumber,
           outbound_signature: signName,
           outbound_date: entryDate.toISOString(),
@@ -242,10 +236,10 @@ await fillReallocationRegister();
 
       if (updateError) throw updateError;
 
-          // VBA AddEntry: Remove from Expiry + check expired + fill reallocation
-    await removeFromExpiryTracker(existing.c209_number);
-    const expiredLog = await checkExpiredC209Numbers();
-    await fillReallocationRegister();
+      // VBA AddEntry: Remove from Expiry + check expired + fill reallocation
+      await removeFromExpiryTracker(existing.c209_number);
+      await checkExpiredC209Numbers();
+      await fillReallocationRegister();
 
       return NextResponse.json({ success: true, c209: existing.c209_number, c208, entry: updated });
     }
@@ -256,13 +250,9 @@ await fillReallocationRegister();
   }
 }
 
-// ── GET ─────────────────────────────────────────────────────────────────
+// ── GET ───────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const user = getUser(req);
-  await removeFromExpiryTracker(existing.c209_number);
-const expiredLog = await checkExpiredC209Numbers();
-await fillReallocationRegister();
-
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -279,6 +269,7 @@ await fillReallocationRegister();
     if (type) {
       query = query.eq('type', type);
     }
+
     if (search) {
       query = query.or(
         `c209_number.ilike.%${search}%,` +
@@ -298,7 +289,7 @@ await fillReallocationRegister();
   }
 }
 
-// ── DELETE ──────────────────────────────────────────────────────────────
+// ── DELETE ────────────────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const user = getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
