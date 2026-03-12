@@ -2,11 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState({ totalEntries: 0, todayEntries: 0, expiringSoon: 0, totalFlights: 0 });
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     async function load() {
       try {
@@ -23,20 +25,23 @@ export default function DashboardPage() {
     }
     load();
   }, [router]);
+
   async function handleSignOut() {
     await fetch('/api/auth', { method: 'DELETE' });
     router.push('/');
   }
+
   function getExpiryStatus(createdAt: string, type: string) {
     if (type === 'ramp_input') return null;
     const created = new Date(createdAt);
     const now = new Date();
     const hoursElapsed = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
     const hoursLeft = 48 - hoursElapsed;
-    if (hoursLeft < 0) return { label: 'WYGASL', color: 'bg-red-500/20 text-red-300' };
-    if (hoursLeft < 12) return { label: `${Math.floor(hoursLeft)}h`, color: 'bg-orange-500/20 text-orange-300' };
-    return { label: `${Math.floor(hoursLeft)}h`, color: 'bg-green-500/20 text-green-300' };
+    if (hoursLeft < 0) return { label: 'WYGASL', color: 'bg-red-100 text-red-700 border border-red-300' };
+    if (hoursLeft < 12) return { label: `${Math.floor(hoursLeft)}h`, color: 'bg-orange-100 text-orange-700 border border-orange-300' };
+    return { label: `${Math.floor(hoursLeft)}h`, color: 'bg-green-100 text-green-700 border border-green-300' };
   }
+
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="w-64 bg-card border-r border-border flex flex-col">
@@ -78,7 +83,7 @@ export default function DashboardPage() {
           {[
             { label: 'Wszystkie wpisy', value: stats.totalEntries, icon: '📋', color: '' },
             { label: 'Dzisiaj', value: stats.todayEntries, icon: '📅', color: '' },
-            { label: 'Wygasają wkrótce', value: stats.expiringSoon, icon: '⏳', color: stats.expiringSoon > 0 ? 'text-orange-400' : '' },
+            { label: 'Wygasają wkrótce', value: stats.expiringSoon, icon: '⏳', color: stats.expiringSoon > 0 ? 'text-orange-600' : '' },
             { label: 'Loty dzisiaj', value: stats.totalFlights, icon: '✈️', color: '' },
           ].map((stat) => (
             <div key={stat.label} className="bg-card border border-border rounded-2xl shadow-sm p-4">
@@ -138,10 +143,10 @@ export default function DashboardPage() {
                         <td className="px-4 py-3 font-mono text-muted-foreground">{entry.c208_number || '-'}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
-                            {entry.type === 'ramp_input' && <span className="bg-gray-500/20 text-gray-400 text-[9px] px-1.5 py-0.5 rounded border border-gray-500/30">RAMP</span>}
-                            {entry.type === 'logistic_input' && <span className="bg-teal-500/20 text-teal-400 text-[9px] px-1.5 py-0.5 rounded border border-teal-500/30">LOG</span>}
-                            {entry.is_new_build && <span className="bg-blue-500/20 text-blue-300 text-[9px] px-1.5 py-0.5 rounded border border-blue-500/30">NEW</span>}
-                            {entry.is_rw_flight && <span className="bg-purple-500/20 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/30">RW</span>}
+                            {entry.type === 'ramp_input' && <span className="bg-slate-100 text-slate-600 text-[9px] px-1.5 py-0.5 rounded border border-slate-300">RAMP</span>}
+                            {entry.type === 'logistic_input' && <span className="bg-teal-100 text-teal-700 text-[9px] px-1.5 py-0.5 rounded border border-teal-300">LOG</span>}
+                            {entry.is_new_build && <span className="bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0.5 rounded border border-blue-300">NEW</span>}
+                            {entry.is_rw_flight && <span className="bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0.5 rounded border border-purple-300">RW</span>}
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium uppercase">{entry.signature || '-'}</td>
@@ -167,6 +172,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 function getMonthPrefix(date: Date): string {
   const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   return months[date.getMonth()] + '-' + String(date.getFullYear()).slice(-2);
