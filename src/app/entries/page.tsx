@@ -65,7 +65,7 @@ export default function EntriesPage() {
             <span>📦</span> C208 Input ( Logistic Input )
           </Link>
           <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm">
-            <span>📋</span> All Entries
+            <span>📋</span> All Entries         </Link>         <Link href="/reallocation" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">           <span>🔄</span> Reallocation Register         </Link>         <Link href="/sheets" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground border-t border-border/50 pt-3 mt-3">           <span>📑</span> VBA Sheets View
           </Link>
         </nav>
       </aside>
@@ -75,7 +75,7 @@ export default function EntriesPage() {
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">All Entries</h1>
+              <h1 className="text-3xl font-bold text-foreground">All Entries         </Link>         <Link href="/reallocation" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">           <span>🔄</span> Reallocation Register         </Link>         <Link href="/sheets" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground border-t border-border/50 pt-3 mt-3">           <span>📑</span> VBA Sheets View</h1>
               <p className="text-muted-foreground">Detailed view of all system records.</p>
             </div>
           </div>
