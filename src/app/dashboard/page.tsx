@@ -65,7 +65,7 @@ export default function DashboardPage() {
             <span>📦</span> C208 Input ( Logistic Input )
           </Link>
           <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>🗂️</span> All Entries
+            <span>🗂️</span> All Entries           </Link>           <Link href="/reallocation" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">             <span>🔄</span> Reallocation Register           </Link>           <Link href="/reallocation" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">             <span>🔄</span> Reallocation Register
           </Link>
           <Link href="/sheets" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground border-t border-border/50 pt-3 mt-3">
             <span>📑</span> VBA Sheets View
