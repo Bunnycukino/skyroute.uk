@@ -1,7 +1,52 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PlusCircle, Printer, CheckCircle2, Loader2 } from 'lucide-react';
+
+const NAV = [
+  { title: 'Pulpit', href: '/dashboard', icon: '🏠' },
+  { title: 'Rampa', href: '/ramp', icon: '📦' },
+  { title: 'Logistyka', href: '/logistic', icon: '📋' },
+  { title: 'Rejestr C209/C208', href: '/entries', icon: '📄' },
+  { title: 'Śledzenie wygaśnięcia', href: '/expiry', icon: '⏰' },
+  { title: 'Realokacja', href: '/reallocation', icon: '🔄' },
+];
+
+function Sidebar({ active }: { active: string }) {
+  const router = useRouter();
+  async function signOut() { await fetch('/api/auth', { method: 'DELETE' }); router.push('/'); }
+  return (
+    <aside style={{ width: 240, minWidth: 240, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', padding: '20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✈</div>
+        <div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 17 }}>Skyroute</div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>System C209/C208</div>
+        </div>
+      </div>
+      <div style={{ padding: '8px 12px', flex: 1 }}>
+        <div style={{ color: '#9ca3af', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, padding: '14px 8px 6px' }}>NAWIGACJA</div>
+        {NAV.map(item => (
+          <Link key={item.href} href={item.href} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 2,
+            background: active === item.href ? 'rgba(37,99,235,0.1)' : 'transparent',
+            color: active === item.href ? '#2563eb' : '#374151',
+            fontWeight: active === item.href ? 600 : 400,
+            fontSize: 14, textDecoration: 'none',
+          }}>
+            <span style={{ fontSize: 16 }}>{item.icon}</span>
+            {item.title}
+          </Link>
+        ))}
+      </div>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb' }}>
+        <div style={{ fontSize: 12, color: '#6b7280' }}>Użytkownik</div>
+        <div style={{ fontSize: 11, color: '#9ca3af' }}>Logistyka Lotnicza</div>
+        <button onClick={signOut} style={{ marginTop: 8, fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Wyloguj</button>
+      </div>
+    </aside>
+  );
+}
 
 export default function RampInputPage() {
   const [loading, setLoading] = useState(false);
@@ -18,12 +63,13 @@ export default function RampInputPage() {
     date_received: new Date().toISOString().split('T')[0]
   });
 
+  const set = (k: string, v: string) => setFormData(f => ({ ...f, [k]: v }));
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess(null);
-
     try {
       const payload = {
         action: 'ramp_input',
@@ -36,210 +82,109 @@ export default function RampInputPage() {
         notes: formData.notes,
         date_received: formData.date_received
       };
-
-      const res = await fetch('/api/entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
+      const res = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Blad zapisu');
-
-      setSuccess({
-        c209: data.c209,
-        bar: payload.container_code,
-        flight: payload.flight_number,
-        pieces: payload.pieces,
-        signature: payload.signature,
-        notes: payload.notes,
-        date: new Date(payload.date_received).toLocaleDateString('en-GB')
-      });
-
-      setFormData({
-        bar_number: '',
-        pieces: '',
-        flight_number: '',
-        origin: '',
-        destination: '',
-        signature: '',
-        notes: '',
-        date_received: new Date().toISOString().split('T')[0]
-      });
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      setSuccess({ c209: data.c209, bar: payload.container_code, flight: payload.flight_number, pieces: payload.pieces, signature: payload.signature, notes: payload.notes, date: new Date(payload.date_received).toLocaleDateString('en-GB') });
+      setFormData({ bar_number: '', pieces: '', flight_number: '', origin: '', destination: '', signature: '', notes: '', date_received: new Date().toISOString().split('T')[0] });
+    } catch (err: any) { setError(err.message); }
+    finally { setLoading(false); }
   }
 
+  const inputStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const, background: '#fff' };
+  const labelStyle = { display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 6 };
+
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-r border-border flex flex-col">
-        <div className="p-6 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">SR</div>
-            <div>
-              <h1 className="font-bold text-foreground text-sm">SkyRoute.uk</h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">C209 System</p>
-            </div>
-          </Link>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
+      <Sidebar active="/ramp" />
+      <main style={{ flex: 1, padding: 32 }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>📦</span> Wprowadzanie z rampy
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Utwórz nowy wpis C209 z danych otrzymanych na rampie</p>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>📊</span> Dashboard
-          </Link>
-          <Link href="/ramp" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm">
-            <span>✈️</span> C209 Input ( Ramp Input )
-          </Link>
-          <Link href="/logistic" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>📦</span> C208 Input ( Logistic Input )
-          </Link>
-          <Link href="/entries" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-            <span>🗂️</span> All Entries           </Link>           <Link href="/reallocation" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">             <span>🔄</span> Reallocation Register
-          </Link>
-          <Link href="/sheets" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground border-t border-border/50 pt-3 mt-3">
-            <span>📑</span> VBA Sheets View
-          </Link>
-        </nav>
-      </aside>
 
-      <main className="flex-1 p-8 bg-slate-50/50 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <header className="mb-8">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">C209 RAMP INPUT</h1>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-1">Register incoming containers - C209 auto-generated</p>
-          </header>
+        {success && (
+          <div style={{ background: '#10b981', borderRadius: 12, padding: '20px 24px', marginBottom: 24, color: '#fff' }}>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>✅ Rejestracja udana! C209: {success.c209}</div>
+            <div style={{ fontSize: 14, marginTop: 4, opacity: 0.9 }}>{success.bar} • {success.flight} • {success.pieces} szt. • {success.date}</div>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="bg-white border-2 border-slate-100 rounded-[32px] shadow-2xl shadow-slate-200/50 overflow-hidden">
-            <div className="p-8 md:p-12 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bar Number</label>
-                  <input
-                    required
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none uppercase"
-                    placeholder="e.g. TA2009"
-                    value={formData.bar_number}
-                    onChange={e => setFormData({...formData, bar_number: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Number of Pieces</label>
-                  <input
-                    required
-                    type="number"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none"
-                    placeholder="0"
-                    value={formData.pieces}
-                    onChange={e => setFormData({...formData, pieces: e.target.value})}
-                  />
-                </div>
-              </div>
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', marginBottom: 24, color: '#dc2626', fontSize: 14 }}>
+            {error}
+          </div>
+        )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Flight Number</label>
-                  <input
-                    required
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none uppercase"
-                    placeholder="e.g. TOM123"
-                    value={formData.flight_number}
-                    onChange={e => setFormData({...formData, flight_number: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date Received</label>
-                  <input
-                    type="date"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none"
-                    value={formData.date_received}
-                    onChange={e => setFormData({...formData, date_received: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Origin (e.g. MAN)</label>
-                  <input
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none uppercase"
-                    placeholder="e.g. MAN"
-                    value={formData.origin}
-                    onChange={e => setFormData({...formData, origin: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Destination (e.g. DXB)</label>
-                  <input
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-xl focus:border-blue-500 transition-all outline-none uppercase"
-                    placeholder="e.g. DXB"
-                    value={formData.destination}
-                    onChange={e => setFormData({...formData, destination: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Comments (e.g. no seal, cart 13)</label>
-                <textarea
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold focus:border-blue-500 transition-all outline-none h-24"
-                  value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Signature (Initials)</label>
-                <input
-                  required
-                  className="w-24 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-black text-center focus:border-blue-500 transition-all outline-none uppercase"
-                  placeholder="RR"
-                  maxLength={3}
-                  value={formData.signature}
-                  onChange={e => setFormData({...formData, signature: e.target.value})}
-                />
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1f2937' }}>Formularz wprowadzania</h2>
             </div>
-
-            {error && (
-              <div className="mx-8 mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 font-bold text-sm">{error}</div>
-            )}
-
-            <div className="p-6 bg-slate-50 flex justify-end">
-              <button
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-3"
-              >
-                {loading ? <Loader2 className="animate-spin" /> : <PlusCircle />}
-                {loading ? 'Submitting...' : 'Register C209 Entry'}
-              </button>
-            </div>
-          </form>
-
-          {success && (
-            <div className="mt-8 bg-green-500 p-8 rounded-[32px] shadow-2xl animate-in zoom-in">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                    <CheckCircle2 className="text-green-500 w-10 h-10" />
-                  </div>
-                  <div>
-                    <div className="text-white/80 text-[10px] font-black uppercase tracking-widest">Registration Successful</div>
-                    <div className="text-4xl font-black text-white tracking-tighter">C209: {success.c209}</div>
-                    <div className="text-white/70 text-sm mt-1">{success.bar} • {success.flight} • {success.pieces} pcs • {success.date}</div>
-                  </div>
+            <form onSubmit={handleSubmit} style={{ padding: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={labelStyle}>Kod kontenera / Numer BAR *</label>
+                  <input style={inputStyle} placeholder="np. ABC12345" value={formData.bar_number} onChange={e => set('bar_number', e.target.value)} required />
                 </div>
-                <Link
-                  href={`/in-bond?c209=${success.c209}&bar=${success.bar}&pieces=${success.pieces}&sig=${success.signature}&notes=${encodeURIComponent(success.notes)}&date=${success.date}&autoPrint=true`}
-                  className="bg-white text-green-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-3"
-                >
-                  <Printer />
-                  Print Official Form
-                </Link>
+                <div>
+                  <label style={labelStyle}>Liczba sztuk</label>
+                  <input style={inputStyle} type="number" placeholder="np. 5" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
+                </div>
               </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Numer lotu</label>
+                <input style={inputStyle} placeholder="np. LH123" value={formData.flight_number} onChange={e => set('flight_number', e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={labelStyle}>Skąd (np. MAN)</label>
+                  <input style={inputStyle} placeholder="np. MAN" value={formData.origin} onChange={e => set('origin', e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Dokąd (np. DXB)</label>
+                  <input style={inputStyle} placeholder="np. DXB" value={formData.destination} onChange={e => set('destination', e.target.value)} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Podpis</label>
+                <input style={inputStyle} placeholder="Imię i nazwisko" value={formData.signature} onChange={e => set('signature', e.target.value)} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Data lotu</label>
+                <input style={inputStyle} type="date" value={formData.date_received} onChange={e => set('date_received', e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#3b82f6,#1d4ed8)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                  {loading ? 'Zapisywanie...' : '✅ Zapisz wpis'}
+                </button>
+                <button type="button" onClick={() => setFormData({ bar_number: '', pieces: '', flight_number: '', origin: '', destination: '', signature: '', notes: '', date_received: new Date().toISOString().split('T')[0] })} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                  ✕ Wyczyść
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden', alignSelf: 'flex-start' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1f2937' }}>Informacje</h2>
             </div>
-          )}
+            <div style={{ padding: 20 }}>
+              {[
+                'Numer C209 zostanie wygenerowany automatycznie',
+                'Numer C208 zostanie wygenerowany automatycznie',
+                'Wpis zostanie dodany do systemu śledzenia wygaśnięcia (48h)',
+                'Data i czas będą zapisane automatycznie',
+              ].map(info => (
+                <div key={info} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, fontSize: 13, color: '#374151' }}>
+                  <span style={{ color: '#3b82f6', marginTop: 1 }}>•</span>
+                  {info}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
     </div>
