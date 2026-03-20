@@ -34,3 +34,40 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed !important;
+    left: -240px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  .dashboard-container,
+  .entries-container,
+  .ramp-container,
+  .logistic-container {
+    flex-direction: column !important;
+  }
+
+  .dashboard-main {
+    padding: 16px !important;
+  }
+
+  h1 {
+    font-size: 24px !important;
+  }
+
+  table {
+    font-size: 12px !important;
+  }
+
+  table th,
+  table td {
+    padding: 8px 6px !important;
+  }
+}
