@@ -67,9 +67,9 @@ export default function ReallocationPage() {
   }
 
   return (
-    <div className=\"realloc-container\" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-      <Sidebar active=\"/reallocation\" />
-      <main className=\"main-content\" style={{ flex: 1, padding: '24px' }}>
+    <div className="realloc-container" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+      <Sidebar active="/reallocation" />
+      <main className="main-content" style={{ flex: 1, padding: '24px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: 0 }}>Reallocation Register</h1>
           <p style={{ color: '#64748b', marginTop: 4 }}>Manage container reallocation and C208 mapping</p>
@@ -78,8 +78,8 @@ export default function ReallocationPage() {
         <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: 24, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <input 
-              type=\"text\" 
-              placeholder=\"Enter C208 Number...\" 
+              type="text" 
+              placeholder="Enter C208 Number..." 
               value={c208Input}
               onChange={e => setC208Input(e.target.value)}
               style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}
