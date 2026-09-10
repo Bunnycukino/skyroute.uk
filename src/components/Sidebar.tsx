@@ -6,6 +6,7 @@ const NAV = [
   { title: 'Ramp', href: '/ramp', icon: '📦' },
   { title: 'Logistics', href: '/logistic', icon: '📋' },
   { title: 'C209/C208 Register', href: '/entries', icon: '📄' },
+  { title: 'Print Out', href: '/printout', icon: '🖨' },
 ];
 
 export function Sidebar({ active }: { active: string }) {
