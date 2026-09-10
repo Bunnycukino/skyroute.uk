@@ -3,6 +3,12 @@
 -- Safe to run multiple times (uses IF NOT EXISTS)
 
 -- ============================================================
+-- Remove unique constraint on c209_number
+-- NEW BUILD entries can have duplicate 'NEW BUILD' as c209_number
+-- ============================================================
+ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_c209_number_key;
+
+-- ============================================================
 -- Add missing columns to 'entries' table
 -- ============================================================
 ALTER TABLE entries

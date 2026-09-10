@@ -8,6 +8,9 @@ export default function EntriesPage() {
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentUser, setCurrentUser] = useState('');
+
+  const isAdmin = currentUser === 'admin';
 
   useEffect(() => {
     async function load() {
@@ -17,6 +20,7 @@ export default function EntriesPage() {
         if (res.status === 401) { router.push('/'); return; }
         const data = await res.json();
         setEntries(data.entries || []);
+        setCurrentUser(data.user || '');
       } catch (err) { console.error('Failed to load entries'); }
       finally { setLoading(false); }
     }
@@ -142,7 +146,11 @@ export default function EntriesPage() {
                         {/* Comment Q */}
                         <td style={{ ...td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.notes || '-'}</td>
                         <td style={{ ...td, background: '#f9fafb' }}>
-                          <button onClick={() => handleDelete(entry.id)} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Delete</button>
+                          {isAdmin ? (
+                            <button onClick={() => handleDelete(entry.id)} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Delete</button>
+                          ) : (
+                            <span style={{ color: '#d1d5db', fontSize: 11 }}>—</span>
+                          )}
                         </td>
                       </tr>
                     );

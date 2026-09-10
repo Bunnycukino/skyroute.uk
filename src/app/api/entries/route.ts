@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ entries: data || [] });
+    return NextResponse.json({ entries: data || [], user });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -281,6 +281,11 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const user = getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Only admin can delete entries
+  if (user !== 'admin') {
+    return NextResponse.json({ error: 'Permission denied. Only admin can delete entries.' }, { status: 403 });
+  }
 
   try {
     const { searchParams } = new URL(req.url);
