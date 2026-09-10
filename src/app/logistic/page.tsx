@@ -1,11 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 
 export default function LogisticInputPage() {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<{c209: string; c208: string} | null>(null);
+  const [success, setSuccess] = useState<{ c209: string; c208: string } | null>(null);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     c209_number: '',
@@ -13,8 +12,7 @@ export default function LogisticInputPage() {
     signature: '',
     date_received: new Date().toISOString().split('T')[0],
     bar_number: '',
-    pieces: '',
-    notes: ''
+    pieces: ''
   });
 
   const isNewBuild = formData.c209_number.toUpperCase().trim() === 'NEW BUILD';
@@ -27,7 +25,7 @@ export default function LogisticInputPage() {
     setSuccess(null);
     const c209Input = formData.c209_number.trim().toUpperCase();
     if (!formData.flight_number.trim()) {
-      setError('Flight Number is required (LOGISTIC INPUT B2).');
+      setError('Flight Number is required.');
       setLoading(false);
       return;
     }
@@ -42,14 +40,13 @@ export default function LogisticInputPage() {
           signature: formData.signature.toUpperCase(),
           date_received: formData.date_received,
           container_code: isNewBuild ? formData.bar_number.toUpperCase() : '',
-          pieces: isNewBuild ? (parseInt(formData.pieces) || 0) : 0,
-          notes: formData.notes
+          pieces: isNewBuild ? (parseInt(formData.pieces) || 0) : 0
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Blad zapisu');
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
       setSuccess({ c209: data.c209, c208: data.c208 });
-      setFormData({ c209_number: '', flight_number: '', signature: '', date_received: new Date().toISOString().split('T')[0], bar_number: '', pieces: '', notes: '' });
+      setFormData({ c209_number: '', flight_number: '', signature: '', date_received: new Date().toISOString().split('T')[0], bar_number: '', pieces: '' });
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -63,20 +60,23 @@ export default function LogisticInputPage() {
       <main style={{ flex: 1, padding: 32 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span>📋</span> Logistic Input
+            <span>📋</span> Logistics Input
           </h1>
-          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Update an existing C209 or create a NEW BUILD</p>
+          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Update existing C209 or create NEW BUILD</p>
         </div>
+
         {success && (
           <div style={{ background: '#10b981', borderRadius: 12, padding: '20px 24px', marginBottom: 24, color: '#fff' }}>
-            <div style={{ fontWeight: 700, fontSize: 18 }}>✅ Data saved! C209: {success.c209}, C208: {success.c208}</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>✅ Saved! C209: {success.c209}, C208: {success.c208}</div>
           </div>
         )}
+
         {error && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', marginBottom: 24, color: '#dc2626', fontSize: 14 }}>
             {error}
           </div>
         )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
@@ -85,7 +85,7 @@ export default function LogisticInputPage() {
             <form onSubmit={handleSubmit} style={{ padding: 20 }}>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>C209 Number *</label>
-                <input style={inputStyle} placeholder="Enter C209" value={formData.c209_number} onChange={e => set('c209_number', e.target.value)} required />
+                <input style={inputStyle} placeholder="Enter C209 or NEW BUILD" value={formData.c209_number} onChange={e => set('c209_number', e.target.value)} required />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Flight Number *</label>
@@ -97,40 +97,43 @@ export default function LogisticInputPage() {
               </div>
               {isNewBuild && (
                 <>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={labelStyle}>Bar Number</label>
-                    <input style={inputStyle} placeholder="Optional for existing C209" value={formData.bar_number} onChange={e => set('bar_number', e.target.value)} />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={labelStyle}>Pieces</label>
-                    <input style={inputStyle} type="number" placeholder="Optional for existing C209" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <div>
+                      <label style={labelStyle}>Bar Number</label>
+                      <input style={inputStyle} placeholder="e.g. ABC12345" value={formData.bar_number} onChange={e => set('bar_number', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Pieces</label>
+                      <input style={inputStyle} type="number" placeholder="e.g. 5" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
+                    </div>
                   </div>
                 </>
               )}
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Signature</label>
-                <input style={inputStyle} placeholder="Name" value={formData.signature} onChange={e => set('signature', e.target.value)} />
+                <input style={inputStyle} placeholder="e.g. RR" value={formData.signature} onChange={e => set('signature', e.target.value)} maxLength={10} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                 <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', background: loading ? '#6ee7b7' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer' }}>
                   {loading ? 'Saving...' : '✅ Save'}
                 </button>
-                <button type="button" onClick={() => setFormData({ c209_number: '', flight_number: '', signature: '', date_received: new Date().toISOString().split('T')[0], bar_number: '', pieces: '', notes: '' })} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                <button type="button" onClick={() => setFormData({ c209_number: '', flight_number: '', signature: '', date_received: new Date().toISOString().split('T')[0], bar_number: '', pieces: '' })} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
                   ✕ Clear
                 </button>
               </div>
             </form>
           </div>
+
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden', alignSelf: 'flex-start' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1f2937' }}>Information</h2>
             </div>
             <div style={{ padding: 20 }}>
               {[
-                isNewBuild ? 'A new entry will be created' : 'Existing C209 will be updated',
-                'C208 number will be generated automatically',
-                'RW flights are detected automatically',
-                'Date and time will be saved automatically',
+                isNewBuild ? 'A new entry will be created with C208' : 'Existing C209 will be updated with C208',
+                'C208 number generated automatically',
+                'RW flights detected automatically (C208 = RW)',
+                'Date and time saved automatically',
               ].map(info => (
                 <div key={info} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, fontSize: 13, color: '#374151' }}>
                   <span style={{ color: '#10b981', marginTop: 1 }}>•</span>

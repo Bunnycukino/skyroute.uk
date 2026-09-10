@@ -2,12 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import supabase from '@/lib/db';
 
-import {
-  addToExpiryTracker,
-  removeFromExpiryTracker,
-  checkExpiredC209Numbers,
-  fillReallocationRegister,
-} from '@/lib/c209-logic';
 
 // ── helpers ──────────────────────────────────────────────────────────────
 function getUser(req: NextRequest): string | null {
@@ -99,11 +93,6 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
-      // VBA AddEntry: Add to Expiry Tracker + check expired C209 (48h)
-      await addToExpiryTracker(c209, entryDate);
-      await checkExpiredC209Numbers();
-      await fillReallocationRegister();
-
       return NextResponse.json({ success: true, c209, entry: result });
     }
 
@@ -161,9 +150,6 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (error) throw error;
-
-        await checkExpiredC209Numbers();
-        await fillReallocationRegister();
 
         return NextResponse.json({ success: true, c209: 'NEW BUILD', c208, entry: result });
       }
@@ -235,11 +221,6 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (updateError) throw updateError;
-
-      // VBA AddEntry: Remove from Expiry + check expired + fill reallocation
-      await removeFromExpiryTracker(existing.c209_number);
-      await checkExpiredC209Numbers();
-      await fillReallocationRegister();
 
       return NextResponse.json({ success: true, c209: existing.c209_number, c208, entry: updated });
     }
