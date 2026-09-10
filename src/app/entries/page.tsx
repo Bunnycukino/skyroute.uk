@@ -22,6 +22,7 @@ const COLUMNS = [
   { key: 'fpieces', label: 'Pieces', accessor: (e: any) => e.outbound_pieces != null ? String(e.outbound_pieces) : '-', type: 'log' },
   { key: 'fsign', label: 'Signature', accessor: (e: any) => e.outbound_signature || '-', type: 'log' },
   { key: 'comment', label: 'Ramp Comment', accessor: (e: any) => e.notes || '-', type: 'comment' },
+  { key: 'status', label: 'Status', accessor: (e: any) => e.status || 'ok', type: 'comment' },
 ];
 
 export default function EntriesPage() {
@@ -119,6 +120,55 @@ export default function EntriesPage() {
     return result;
   }, [entries, search, filters, sortCol, sortDir]);
 
+  // Stats
+  const stats = useMemo(() => {
+    const total = displayEntries.length;
+    const ok = displayEntries.filter(e => (e.status || 'ok') === 'ok').length;
+    const issue = displayEntries.filter(e => e.status === 'issue').length;
+    const missing = displayEntries.filter(e => e.status === 'missing').length;
+    return { total, ok, issue, missing };
+  }, [displayEntries]);
+
+  // Export to CSV
+  function exportCSV() {
+    const headers = ['C209', 'Date', 'Time', 'Month-Year', 'Bar', 'Pieces', 'Flight', 'Signature', 'C208', 'Flight Date', 'Flight Time', 'Flight Month-Year', 'Outbound Flight', 'Outbound Bar', 'Outbound Pieces', 'Outbound Signature', 'Status', 'Comment'];
+    const rows = displayEntries.map(e => {
+      const created = new Date(e.created_at);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const my = created ? months[created.getMonth()] + '-' + String(created.getFullYear()).slice(-2) : '';
+      const od = e.outbound_date ? new Date(e.outbound_date) : null;
+      const omy = od ? months[od.getMonth()] + '-' + String(od.getFullYear()).slice(-2) : '';
+      return [
+        e.c209_number || '',
+        created ? created.toLocaleDateString('en-GB') : '',
+        created ? created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+        my,
+        e.bar_number || e.container_code || '',
+        e.pieces ?? '',
+        e.flight_number || '',
+        e.signature || '',
+        e.c208_number || '',
+        od ? od.toLocaleDateString('en-GB') : '',
+        e.updated_at ? new Date(e.updated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+        omy,
+        e.outbound_flight || '',
+        e.outbound_bar_number || '',
+        e.outbound_pieces ?? '',
+        e.outbound_signature || '',
+        e.status || 'ok',
+        (e.notes || '').replace(/[",\n]/g, ' '),
+      ];
+    });
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `register-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function toggleFilterValue(colKey: string, value: string) {
     setFilters(prev => {
       const next = { ...prev };
@@ -196,14 +246,18 @@ export default function EntriesPage() {
               style={{ width: 400, maxWidth: '100%', marginTop: 12, padding: '10px 14px', fontSize: 14, border: '1px solid #d1d5db', borderRadius: 8, outline: 'none' }}
             />
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#6b7280' }}>
-              {displayEntries.length} of {entries.length} rows
-              {activeFilterCount > 0 && ` • ${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active`}
-            </span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Stats badges */}
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#e5e7eb', color: '#374151' }}>{stats.total} Total</span>
+              <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#d1fae5', color: '#059669' }}>✅ {stats.ok}</span>
+              {stats.issue > 0 && <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#fef3c7', color: '#d97706' }}>⚠️ {stats.issue}</span>}
+              {stats.missing > 0 && <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: '#fee2e2', color: '#dc2626' }}>❌ {stats.missing}</span>}
+            </div>
+            <button onClick={exportCSV} style={{ padding: '8px 14px', background: '#059669', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>📊 Export CSV</button>
             {activeFilterCount > 0 && (
-              <button onClick={clearAllFilters} style={{ padding: '6px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: '#374151', fontWeight: 500 }}>
-                ✕ Clear all filters
+              <button onClick={clearAllFilters} style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: '#374151', fontWeight: 500 }}>
+                ✕ Clear filters
               </button>
             )}
           </div>
@@ -267,9 +321,19 @@ export default function EntriesPage() {
                       {COLUMNS.map(col => {
                         const style = col.type === 'ramp' ? tdRamp : col.type === 'log' ? tdLog : td;
                         const isBold = col.key === 'c209' || col.key === 'c208';
+                        const status = col.accessor(entry);
+                        const statusColors: Record<string, string> = { ok: '#d1fae5', issue: '#fef3c7', missing: '#fee2e2' };
+                        const statusTextColors: Record<string, string> = { ok: '#059669', issue: '#d97706', missing: '#dc2626' };
+                        const statusLabels: Record<string, string> = { ok: '✅ OK', issue: '⚠️ ISSUE', missing: '❌ MISSING' };
                         return (
                           <td key={col.key} style={{ ...style, fontWeight: isBold ? 600 : 400, color: isBold ? '#111827' : undefined, maxWidth: col.key === 'comment' ? 200 : undefined, overflow: col.key === 'comment' ? 'hidden' : undefined, textOverflow: col.key === 'comment' ? 'ellipsis' : undefined }}>
-                            {col.accessor(entry)}
+                            {col.key === 'status' ? (
+                              <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700, background: statusColors[status] || '#e5e7eb', color: statusTextColors[status] || '#374151', textTransform: 'uppercase' }}>
+                                {statusLabels[status] || status}
+                              </span>
+                            ) : (
+                              col.accessor(entry)
+                            )}
                           </td>
                         );
                       })}

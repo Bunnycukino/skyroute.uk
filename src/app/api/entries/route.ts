@@ -86,12 +86,58 @@ export async function POST(req: NextRequest) {
           is_rw_flight: false,
           month_year: monthYear,
           created_by: user,
-          created_at: entryDate.toISOString()
+          created_at: entryDate.toISOString(),
+          status: body.status || 'ok',
+          seals_intact: body.seals_intact !== undefined ? body.seals_intact : true,
+          all_parts_returned: body.all_parts_returned !== undefined ? body.all_parts_returned : true,
+          items_returned: body.items_returned !== undefined ? body.items_returned : true
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Trigger email notification if status is ISSUE or MISSING
+      const entryStatus = body.status || 'ok';
+      if (entryStatus === 'issue' || entryStatus === 'missing') {
+        try {
+          const barNum = (body.container_code || '').toUpperCase();
+          const flightNum = (body.flight_number || '').toUpperCase();
+          const issues: string[] = [];
+          if (body.seals_intact === false) issues.push('Seals NOT intact');
+          if (body.all_parts_returned === false) issues.push('NOT all parts returned');
+          if (body.items_returned === false) issues.push('Items sent did NOT return');
+          if (body.notes) issues.push(`Comments: ${body.notes}`);
+
+          const emailBody = `Ramp Issue Reported
+
+C209: ${c209}
+Bar Number: ${barNum}
+Flight: ${flightNum}
+Pieces: ${body.pieces || 0}
+Signature: ${(body.signature || '').toUpperCase()}
+Status: ${entryStatus.toUpperCase()}
+
+Issues Found:
+${issues.length > 0 ? issues.map(i => '  - ' + i).join('\n') : '  - Status marked as ' + entryStatus}
+
+Reported by: ${user}
+Time: ${entryDate.toLocaleString('en-GB')}
+
+This is an automated notification from SkyRoute C209/C208 System.`;
+
+          await fetch(`${req.nextUrl.origin}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subject: `[ISSUE] C209 ${c209} — ${barNum} / ${flightNum}`,
+              body: emailBody
+            })
+          });
+        } catch (emailErr) {
+          console.error('[NOTIFY] Failed to send email:', emailErr);
+        }
+      }
 
       return NextResponse.json({ success: true, c209, entry: result });
     }

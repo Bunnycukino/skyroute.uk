@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,17 +10,37 @@ const NAV = [
   { title: 'Print Out', href: '/printout', icon: '🖨' },
 ];
 
+const ADMIN_NAV = [
+  { title: 'Manage Users', href: '/users', icon: '👥' },
+  { title: 'Settings', href: '/settings', icon: '⚙️' },
+];
+
 export function Sidebar({ active }: { active: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const res = await fetch('/api/entries');
+        if (res.ok) {
+          const data = await res.json();
+          setUsername(data.user || '');
+          setIsAdmin(data.user === 'admin');
+        }
+      } catch {}
+    }
+    checkUser();
+  }, []);
 
   async function signOut() {
     await fetch('/api/auth', { method: 'DELETE' });
     router.push('/');
   }
 
-  // Close drawer on navigation
   function handleNav() {
     setMobileOpen(false);
   }
@@ -59,7 +79,7 @@ export function Sidebar({ active }: { active: string }) {
           </div>
         </div>
       </div>
-      <div style={{ padding: '8px 12px', flex: 1 }}>
+      <div style={{ padding: '8px 12px', flex: 1, overflowY: 'auto' }}>
         <div
           style={{
             color: '#9ca3af',
@@ -95,6 +115,46 @@ export function Sidebar({ active }: { active: string }) {
             {item.title}
           </Link>
         ))}
+
+        {isAdmin && (
+          <>
+            <div
+              style={{
+                color: '#9ca3af',
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                padding: '14px 8px 6px',
+              }}
+            >
+              ADMIN
+            </div>
+            {ADMIN_NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={handleNav}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  marginBottom: 2,
+                  textDecoration: 'none',
+                  background: active === item.href ? '#fef2f2' : 'transparent',
+                  color: active === item.href ? '#dc2626' : '#374151',
+                  fontWeight: active === item.href ? 600 : 400,
+                  fontSize: 14,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                {item.title}
+              </Link>
+            ))}
+          </>
+        )}
       </div>
       <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb' }}>
         <div
@@ -110,20 +170,21 @@ export function Sidebar({ active }: { active: string }) {
               width: 36,
               height: 36,
               borderRadius: '50%',
-              background: '#2563eb',
+              background: isAdmin ? '#dc2626' : '#2563eb',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
               fontWeight: 700,
+              textTransform: 'uppercase',
             }}
           >
-            U
+            {username.charAt(0) || 'U'}
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>User</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{username || 'User'}</div>
             <div style={{ fontSize: 11, color: '#6b7280' }}>
-              Aviation Logistics
+              {isAdmin ? 'Administrator' : 'Aviation Logistics'}
             </div>
           </div>
         </div>
@@ -219,7 +280,7 @@ export function Sidebar({ active }: { active: string }) {
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justifyContent: center;
           }
 
           .mobile-title {

@@ -4,17 +4,21 @@ import { Sidebar } from '@/components/Sidebar';
 
 export default function RampInputPage() {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<{ c209: string; bar: string; flight: string; pieces: number; signature: string; notes: string } | null>(null);
+  const [success, setSuccess] = useState<{ c209: string; bar: string; flight: string; pieces: number; signature: string; status: string } | null>(null);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     bar_number: '',
     pieces: '',
     flight_number: '',
     signature: '',
-    notes: ''
+    notes: '',
+    status: 'ok',
+    seals_intact: true,
+    all_parts_returned: true,
+    items_returned: true,
   });
 
-  const set = (k: string, v: string) => setFormData(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: any) => setFormData(f => ({ ...f, [k]: v }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +32,11 @@ export default function RampInputPage() {
         pieces: parseInt(formData.pieces) || 0,
         flight_number: formData.flight_number.toUpperCase(),
         signature: formData.signature.toUpperCase(),
-        notes: formData.notes
+        notes: formData.notes,
+        status: formData.status,
+        seals_intact: formData.seals_intact,
+        all_parts_returned: formData.all_parts_returned,
+        items_returned: formData.items_returned,
       };
       const res = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
@@ -39,11 +47,20 @@ export default function RampInputPage() {
         flight: payload.flight_number,
         pieces: payload.pieces,
         signature: payload.signature,
-        notes: payload.notes
+        status: formData.status,
       });
-      setFormData({ bar_number: '', pieces: '', flight_number: '', signature: '', notes: '' });
 
-      // Auto-generate and print IN BOND Control Sheet using original PDF template
+      // If issue/missing, show notification message
+      if (formData.status === 'issue' || formData.status === 'missing') {
+        setSuccess(s => s ? { ...s, status: 'NOTIFIED' } : null);
+      }
+
+      setFormData({
+        bar_number: '', pieces: '', flight_number: '', signature: '', notes: '',
+        status: 'ok', seals_intact: true, all_parts_returned: true, items_returned: true,
+      });
+
+      // Auto-generate and print IN BOND Control Sheet
       try {
         const printRes = await fetch('/api/print-in-bond', {
           method: 'POST',
@@ -77,6 +94,7 @@ export default function RampInputPage() {
 
   const inputStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const, background: '#fff' };
   const labelStyle = { display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 6 };
+  const statusColors: Record<string, string> = { ok: '#10b981', issue: '#f59e0b', missing: '#dc2626' };
 
   return (
     <div className="ramp-container" style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
@@ -86,13 +104,16 @@ export default function RampInputPage() {
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span>📦</span> Ramp Input
           </h1>
-          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Create new C209 entry from ramp received data</p>
+          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Driver delivers bar → ramp checks seals, parts, items returned</p>
         </div>
 
         {success && (
-          <div style={{ background: '#10b981', borderRadius: 12, padding: '20px 24px', marginBottom: 24, color: '#fff' }}>
+          <div style={{ background: success.status === 'NOTIFIED' ? '#f59e0b' : '#10b981', borderRadius: 12, padding: '20px 24px', marginBottom: 24, color: '#fff' }}>
             <div style={{ fontWeight: 700, fontSize: 18 }}>✅ Entry Saved! C209: {success.c209}</div>
             <div style={{ fontSize: 14, marginTop: 4, opacity: 0.9 }}>{success.bar} • {success.flight} • {success.pieces} pcs</div>
+            {success.status === 'NOTIFIED' && (
+              <div style={{ fontSize: 13, marginTop: 8, opacity: 0.9 }}>⚠️ Issue reported — email notification sent to admin.</div>
+            )}
             <div style={{ fontSize: 13, marginTop: 8, opacity: 0.8 }}>IN BOND Control Sheet generated — print dialog should open automatically.</div>
           </div>
         )}
@@ -119,23 +140,71 @@ export default function RampInputPage() {
                   <input style={inputStyle} type="number" placeholder="e.g. 5" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
                 </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>Flight Number</label>
-                <input style={inputStyle} placeholder="e.g. EK123" value={formData.flight_number} onChange={e => set('flight_number', e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={labelStyle}>Flight Number</label>
+                  <input style={inputStyle} placeholder="e.g. EK123" value={formData.flight_number} onChange={e => set('flight_number', e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Signature (initials)</label>
+                  <input style={inputStyle} placeholder="e.g. RR" value={formData.signature} onChange={e => set('signature', e.target.value)} maxLength={10} />
+                </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>Signature (initials)</label>
-                <input style={inputStyle} placeholder="e.g. RR" value={formData.signature} onChange={e => set('signature', e.target.value)} maxLength={10} />
+
+              {/* Check Status Section */}
+              <div style={{ background: '#f0f9ff', borderRadius: 8, padding: 16, marginBottom: 16, border: '1px solid #bae6fd' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#0369a1', marginBottom: 12 }}>🔍 Check Status</div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>Status</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[
+                      { val: 'ok', label: '✅ OK', color: '#10b981' },
+                      { val: 'issue', label: '⚠️ ISSUE', color: '#f59e0b' },
+                      { val: 'missing', label: '❌ MISSING', color: '#dc2626' },
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => set('status', opt.val)}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: 8, border: formData.status === opt.val ? `2px solid ${opt.color}` : '2px solid #e5e7eb',
+                          background: formData.status === opt.val ? opt.color + '20' : '#fff', color: opt.color,
+                          fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  {[
+                    { key: 'seals_intact', label: 'Seals Intact' },
+                    { key: 'all_parts_returned', label: 'All Parts Returned' },
+                    { key: 'items_returned', label: 'Items Returned' },
+                  ].map(check => (
+                    <label key={check.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151', cursor: 'pointer', padding: '8px', background: '#fff', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData[check.key as keyof typeof formData] as boolean}
+                        onChange={e => set(check.key, e.target.checked)}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }}
+                      />
+                      {check.label}
+                    </label>
+                  ))}
+                </div>
               </div>
+
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Comments</label>
-                <textarea value={formData.notes} onChange={e => set('notes', e.target.value)} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder="e.g. seal missing, cart 13" />
+                <textarea value={formData.notes} onChange={e => set('notes', e.target.value)} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder="e.g. seal missing, cart 13 damaged..." />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                 <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer' }}>
                   {loading ? 'Saving...' : '✅ Save Entry'}
                 </button>
-                <button type="button" onClick={() => setFormData({ bar_number: '', pieces: '', flight_number: '', signature: '', notes: '' })} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                <button type="button" onClick={() => setFormData({ bar_number: '', pieces: '', flight_number: '', signature: '', notes: '', status: 'ok', seals_intact: true, all_parts_returned: true, items_returned: true })} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
                   ✕ Clear
                 </button>
               </div>
@@ -148,9 +217,11 @@ export default function RampInputPage() {
             </div>
             <div style={{ padding: 20 }}>
               {[
-                'C209 number will be generated automatically',
-                'C208 will be generated at Logistics stage',
+                'C209 number generated automatically',
+                'C208 generated at Logistics stage',
                 'Date and time saved automatically',
+                'Status: OK = all good, ISSUE = problem found, MISSING = items missing',
+                'If ISSUE or MISSING — email sent to admin automatically',
               ].map(info => (
                 <div key={info} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, fontSize: 13, color: '#374151' }}>
                   <span style={{ color: '#2563eb', marginTop: 1 }}>•</span>
