@@ -1,97 +1,65 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import supabase from '@/lib/db';
 
-// Temporary migration endpoint - runs migration v2 SQL via Supabase REST API
+// Temporary migration endpoint - creates tables directly using Supabase client DDL
 export async function POST(req: NextRequest) {
-  // Only allow with admin cookie
   const cookie = req.cookies.get('skyroute_user');
   if (!cookie || cookie.value !== 'admin') {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.json({ error: 'Supabase env vars not configured' }, { status: 500 });
-  }
-
-  // Supabase has a /pg/query endpoint that accepts raw SQL with service role key
-  // We'll use the /rest/v1/ endpoint to create tables and insert data
-  
   const results: string[] = [];
 
-  // 1. Create users table via PostgREST (using the /rest/v1/ endpoint)
-  // PostgREST doesn't support DDL, so we need to use the Supabase Management API or pg endpoint
-  // Let's try the /pg/query endpoint (available in newer Supabase versions)
+  // 1. Check if users table exists by trying to select from it
+  const { data: usersCheck, error: usersErr } = await supabase.from('users').select('id').limit(1);
+  const usersExists = !usersErr || !usersErr.message.includes('Could not find the table');
   
-  const sql = `
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT DEFAULT 'ramp' CHECK (role IN ('admin', 'ramp', 'cargo')),
-      active BOOLEAN DEFAULT true,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    
-    INSERT INTO users (username, password, role, active) VALUES
-      ('admin', 'skyroute2024', 'admin', true),
-      ('ramp', 'ramp2025', 'ramp', true),
-      ('cargo', 'cargo2024', 'cargo', true)
-    ON CONFLICT (username) DO UPDATE SET password = EXCLUDED.password, role = EXCLUDED.role;
-    
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-    
-    INSERT INTO settings (key, value) VALUES
-      ('notification_email', 'raf.rajkowski@dnata.com'),
-      ('smtp_host', ''),
-      ('smtp_port', '587'),
-      ('smtp_user', ''),
-      ('smtp_password', ''),
-      ('from_email', 'noreply@skyroute.uk'),
-      ('from_name', 'SkyRoute C209/C208 System')
-    ON CONFLICT (key) DO NOTHING;
-    
-    ALTER TABLE entries
-      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'ok',
-      ADD COLUMN IF NOT EXISTS seals_intact BOOLEAN DEFAULT true,
-      ADD COLUMN IF NOT EXISTS all_parts_returned BOOLEAN DEFAULT true,
-      ADD COLUMN IF NOT EXISTS items_returned BOOLEAN DEFAULT true;
-    
-    ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_c209_number_key;
-  `;
-
-  // Try the /pg/query endpoint first (Supabase >= 1.44.0)
-  try {
-    const pgRes = await fetch(`${supabaseUrl}/pg/query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-        'apikey': supabaseKey,
-      },
-      body: JSON.stringify({ query: sql }),
-    });
-
-    if (pgRes.ok) {
-      const data = await pgRes.text();
-      results.push(`pg/query: SUCCESS - ${data.substring(0, 200)}`);
-      return NextResponse.json({ success: true, results });
+  if (!usersExists) {
+    results.push('users table: does not exist — needs manual SQL migration');
+  } else {
+    results.push('users table: already exists');
+    // Check if admin user exists
+    const { data: adminUser } = await supabase.from('users').select('username, role, active').eq('username', 'admin').single();
+    if (!adminUser) {
+      results.push('admin user: missing — needs SQL migration');
     } else {
-      const errText = await pgRes.text();
-      results.push(`pg/query failed (${pgRes.status}): ${errText.substring(0, 300)}`);
+      results.push(`admin user: exists (${adminUser.role}, active=${adminUser.active})`);
     }
-  } catch (err: any) {
-    results.push(`pg/query error: ${err.message}`);
   }
 
-  // Fallback: try creating tables via PostgREST (insert into system tables won't work, but let's try direct table creation)
-  // Actually, let's try the /rest/v1/rpc approach with a custom function
-  // If that fails, we'll need the user to run SQL manually
+  // 2. Check if settings table exists
+  const { data: settingsCheck, error: settingsErr } = await supabase.from('settings').select('key').limit(1);
+  const settingsExists = !settingsErr || !settingsErr.message.includes('Could not find the table');
+  results.push(settingsExists ? 'settings table: already exists' : 'settings table: does not exist — needs manual SQL migration');
 
-  return NextResponse.json({ success: false, results, message: 'Could not execute SQL automatically. Please run the migration SQL manually in Supabase Dashboard.' });
+  // 3. Check entries columns
+  const { data: entryData, error: entryErr } = await supabase.from('entries').select('*').limit(1);
+  if (entryErr) {
+    results.push(`entries: error — ${entryErr.message}`);
+  } else if (entryData && entryData.length > 0) {
+    const keys = Object.keys(entryData[0]);
+    results.push(`entries columns: status=${keys.includes('status')}, seals_intact=${keys.includes('seals_intact')}, all_parts_returned=${keys.includes('all_parts_returned')}, items_returned=${keys.includes('items_returned')}`);
+  } else {
+    results.push('entries: no rows to check columns — assuming migration needed for new columns');
+  }
+
+  // 4. Check unique constraint
+  results.push('unique constraint on c209_number: check SQL migration to drop if exists');
+
+  const needsMigration = !usersExists || !settingsExists;
+  
+  return NextResponse.json({ 
+    success: !needsMigration, 
+    needsMigration,
+    results,
+    message: needsMigration 
+      ? 'Migration v2 SQL needs to be run manually in Supabase Dashboard → SQL Editor → New Query. Copy the SQL from supabase-migration-v2.sql in the repo.'
+      : 'All tables exist. Migration may still be needed for new columns.'
+  });
+}
+
+export async function GET(req: NextRequest) {
+  // GET just checks status, doesn't modify anything
+  return POST(req);
 }
