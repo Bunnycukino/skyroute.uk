@@ -42,6 +42,35 @@ export default function RampInputPage() {
         notes: payload.notes
       });
       setFormData({ bar_number: '', pieces: '', flight_number: '', signature: '', notes: '' });
+
+      // Auto-generate and print IN BOND Control Sheet using original PDF template
+      try {
+        const printRes = await fetch('/api/print-in-bond', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            c209: data.c209,
+            bar_number: payload.container_code,
+            pieces: payload.pieces,
+            flight_number: payload.flight_number,
+            signature: payload.signature,
+            date_received: new Date().toISOString().split('T')[0],
+            comments: payload.notes
+          })
+        });
+        if (printRes.ok) {
+          const blob = await printRes.blob();
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, '_blank');
+          if (win) {
+            win.addEventListener('load', () => {
+              setTimeout(() => { win.print(); }, 500);
+            });
+          }
+        }
+      } catch (printErr) {
+        console.error('Print failed:', printErr);
+      }
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -64,6 +93,7 @@ export default function RampInputPage() {
           <div style={{ background: '#10b981', borderRadius: 12, padding: '20px 24px', marginBottom: 24, color: '#fff' }}>
             <div style={{ fontWeight: 700, fontSize: 18 }}>✅ Entry Saved! C209: {success.c209}</div>
             <div style={{ fontSize: 14, marginTop: 4, opacity: 0.9 }}>{success.bar} • {success.flight} • {success.pieces} pcs</div>
+            <div style={{ fontSize: 13, marginTop: 8, opacity: 0.8 }}>IN BOND Control Sheet generated — print dialog should open automatically.</div>
           </div>
         )}
 
