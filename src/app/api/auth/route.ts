@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Simple credential check - in production use a real auth system with hashed passwords
 const USERS: Record<string, string> = {
   admin: 'skyroute2024',
-  ramp: 'ramp2024',
+  ramp: 'ramp2025',
   cargo: 'cargo2024',
 };
 
