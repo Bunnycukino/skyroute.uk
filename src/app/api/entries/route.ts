@@ -118,7 +118,9 @@ export async function POST(req: NextRequest) {
       }
 
       // ── NEW BUILD path ────────────────────────────────────────────
-      // Mirrors VBA: isNewBuild = True => create full row immediately
+      // HMRC regulation: NEW BUILD = new flight built from scratch, no inbound.
+      // Data goes ONLY into outbound (green/logistic) columns.
+      // Ramp (yellow) columns stay empty — nothing returned.
       if (c209Input === 'NEW BUILD') {
         const seq208 = await getNextSequence('c208', entryDate);
         const c208 = buildNumber(prefix, seq208);
@@ -131,15 +133,20 @@ export async function POST(req: NextRequest) {
             type: 'logistic_input',
             c209_number: 'NEW BUILD',
             c208_number: c208,
-            bar_number: barNumber || null,
-            container_code: barNumber || null,
-            flight_number: flightNumber || null,
-            origin: (body.origin || '').toUpperCase() || null,
-            destination: (body.destination || '').toUpperCase() || null,
-            pieces: pieces,
-            signature: signName || null,
+            // Ramp (inbound) fields — EMPTY for NEW BUILD
+            bar_number: null,
+            container_code: null,
+            flight_number: null,
+            pieces: null,
+            signature: null,
+            // Outbound (logistic) fields — filled with input data
+            outbound_flight: flightNumber || null,
+            outbound_signature: signName || null,
+            outbound_date: entryDate.toISOString(),
+            outbound_month_year: monthYear,
+            outbound_bar_number: barNumber || null,
+            outbound_pieces: pieces || null,
             notes: body.notes || null,
-            flags: (body.flags || '').toUpperCase() || null,
             is_new_build: true,
             is_rw_flight: isRW,
             month_year: monthYear,
