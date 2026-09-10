@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const NAV = [
-  { title: 'Dashboard', href: '/dashboard', icon: '🏠' },
   { title: 'Ramp', href: '/ramp', icon: '📦' },
   { title: 'Logistics', href: '/logistic', icon: '📋' },
   { title: 'C209/C208 Register', href: '/entries', icon: '📄' },
