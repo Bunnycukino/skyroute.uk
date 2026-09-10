@@ -133,12 +133,12 @@ export async function POST(req: NextRequest) {
             type: 'logistic_input',
             c209_number: 'NEW BUILD',
             c208_number: c208,
-            // Ramp (inbound) fields — EMPTY for NEW BUILD
-            bar_number: null,
-            container_code: null,
-            flight_number: null,
-            pieces: null,
-            signature: null,
+            // Ramp (inbound) fields — EMPTY for NEW BUILD (not null, DB constraint)
+            bar_number: '',
+            container_code: '',
+            flight_number: '',
+            pieces: 0,
+            signature: '',
             // Outbound (logistic) fields — filled with input data
             outbound_flight: flightNumber || null,
             outbound_signature: signName || null,
