@@ -1,5 +1,6 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 const NAV = [
@@ -11,24 +12,21 @@ const NAV = [
 
 export function Sidebar({ active }: { active: string }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   async function signOut() {
     await fetch('/api/auth', { method: 'DELETE' });
     router.push('/');
   }
 
-  return (
-    <aside
-      style={{
-        width: 240,
-        minWidth: 240,
-        background: '#fff',
-        borderRight: '1px solid #e5e7eb',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-      }}
-      className="sidebar"
-    >
+  // Close drawer on navigation
+  function handleNav() {
+    setMobileOpen(false);
+  }
+
+  const sidebarContent = (
+    <>
       <div
         style={{
           background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)',
@@ -78,6 +76,7 @@ export function Sidebar({ active }: { active: string }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={handleNav}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -86,8 +85,7 @@ export function Sidebar({ active }: { active: string }) {
               borderRadius: 8,
               marginBottom: 2,
               textDecoration: 'none',
-              background:
-                active === item.href ? '#eff6ff' : 'transparent',
+              background: active === item.href ? '#eff6ff' : 'transparent',
               color: active === item.href ? '#2563eb' : '#374151',
               fontWeight: active === item.href ? 600 : 400,
               fontSize: 14,
@@ -145,6 +143,115 @@ export function Sidebar({ active }: { active: string }) {
           🚪 Sign Out
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="mobile-topbar">
+        <button
+          className="hamburger-btn"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? '✕' : '☰'}
+        </button>
+        <span className="mobile-title">✈️ Skyroute</span>
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — desktop always visible, mobile slides in */}
+      <aside
+        className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}
+        style={{
+          width: 240,
+          minWidth: 240,
+          background: '#fff',
+          borderRight: '1px solid #e5e7eb',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+        }}
+      >
+        {sidebarContent}
+      </aside>
+
+      <style jsx>{`
+        /* Mobile top bar — hidden on desktop */
+        .mobile-topbar {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            padding: 14px 16px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          }
+
+          .hamburger-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .mobile-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .sidebar {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 200;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+            padding-top: 0;
+          }
+
+          .sidebar-open {
+            transform: translateX(0) !important;
+          }
+
+          .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 150;
+          }
+        }
+      `}</style>
+    </>
   );
 }
