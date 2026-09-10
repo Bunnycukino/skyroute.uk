@@ -42,8 +42,7 @@ export default function EntriesPage() {
   useEffect(() => {
     async function load() {
       try {
-        const params = new URLSearchParams({ search });
-        const res = await fetch(`/api/entries?${params}`);
+        const res = await fetch(`/api/entries`);
         if (res.status === 401) { router.push('/'); return; }
         const data = await res.json();
         setEntries(data.entries || []);
@@ -52,7 +51,7 @@ export default function EntriesPage() {
       finally { setLoading(false); }
     }
     load();
-  }, [search, router]);
+  }, [router]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -87,9 +86,16 @@ export default function EntriesPage() {
     return arr;
   }, [filterCol, entries, filterSearch]);
 
-  // Filtered + sorted entries
+  // Filtered + sorted entries (local search + column filters + sort)
   const displayEntries = useMemo(() => {
     let result = [...entries];
+    // Apply local keyword search across all columns
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      result = result.filter(e =>
+        COLUMNS.some(col => col.accessor(e).toLowerCase().includes(q))
+      );
+    }
     // Apply column filters
     for (const [colKey, selected] of Object.entries(filters)) {
       if (selected.size === 0) continue;
@@ -111,7 +117,7 @@ export default function EntriesPage() {
       }
     }
     return result;
-  }, [entries, filters, sortCol, sortDir]);
+  }, [entries, search, filters, sortCol, sortDir]);
 
   function toggleFilterValue(colKey: string, value: string) {
     setFilters(prev => {
