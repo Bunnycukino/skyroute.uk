@@ -148,8 +148,7 @@ function YesNo({
   );
 }
 
-function InBondFormContent() {
-  function findValueNear(rows: any[][], label: string): string {
+function findValueNear(rows: any[][], label: string): string {
   const target = label.toLowerCase();
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r] || [];
@@ -186,6 +185,8 @@ function parseInBondExcel(rows: any[][]): Partial<FormState> {
     reseal_to: findValueNear(rows, 'TO'),
   };
 }
+
+function InBondFormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -225,21 +226,6 @@ function parseInBondExcel(rows: any[][]): Partial<FormState> {
         gift_cart_equipment_wheels_brakes: form.gift_cart_equipment_wheels_brakes === 'YES',
         dispatch_recorded: form.dispatch_recorded === 'YES',
       };
-      function handleExcelImport(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-    const parsed = parseInBondExcel(rows);
-    setForm((prev) => ({ ...prev, ...parsed }));
-  };
-  reader.readAsArrayBuffer(file);
-  e.target.value = '';
-}
       const res = await fetch('/api/in-bond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -254,6 +240,22 @@ function parseInBondExcel(rows: any[][]): Partial<FormState> {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleExcelImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const parsed = parseInBondExcel(rows);
+      setForm((prev) => ({ ...prev, ...parsed }));
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
   }
 
   const editable = mode === 'form';
@@ -291,8 +293,8 @@ function parseInBondExcel(rows: any[][]): Partial<FormState> {
           )}
           <button className="ib-btn-secondary" onClick={() => router.push('/in-bond/list')}>View Register</button>
           {editable && (
-  abel className="ib-btn-secondary" style={{ cursor: 'pointer' }}>
-    Import z Excela
+            <label className="ib-btn-secondary" style={{ cursor: 'pointer' }}>
+    Import from Excel
     <input
       type="file"
       accept=".xlsx,.xls"

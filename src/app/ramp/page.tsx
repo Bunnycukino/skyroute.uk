@@ -133,7 +133,7 @@ function InBondPrintModal({ data, onClose }: { data: any; onClose: () => void })
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, borderBottom: '2px solid #000', paddingBottom: 4 }}>CONFIRMATION PHOTO</div>
                 <div style={{ border: '2px solid #000', padding: 8, textAlign: 'center' }}>
-                  <img src={data.photo} alt=\"Confirmation photo\" style={{ maxWidth: '100%', maxHeight: 300, objectFit: 'contain' }} />
+                  <img src={data.photo} alt="Confirmation photo" style={{ maxWidth: '100%', maxHeight: 300, objectFit: 'contain' }} />
                 </div>
               </div>
             )}
@@ -219,9 +219,9 @@ export default function RampInputPage() {
   const labelStyle = { display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 6 };
 
   return (
-    <div className=\"ramp-container\" style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
-      <Sidebar active=\"/ramp\" />
-      <main className=\"main-content\" style={{ flex: 1, padding: 32 }}>
+    <div className="ramp-container" style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
+      <Sidebar active="/ramp" />
+      <main className="main-content" style={{ flex: 1, padding: 32 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span>📦</span> Ramp Input
@@ -245,7 +245,7 @@ export default function RampInputPage() {
           </div>
         )}
 
-        <div className=\"form-grid\" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
+        <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1f2937' }}>Input Form</h2>
@@ -254,63 +254,63 @@ export default function RampInputPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label style={labelStyle}>Container Code / BAR Number *</label>
-                  <input style={inputStyle} placeholder=\"e.g. ABC12345\" value={formData.bar_number} onChange={e => set('bar_number', e.target.value)} required />
+                  <input style={inputStyle} placeholder="e.g. ABC12345" value={formData.bar_number} onChange={e => set('bar_number', e.target.value)} required />
                 </div>
                 <div>
                   <label style={labelStyle}>Number of Pieces</label>
-                  <input style={inputStyle} type=\"number\" placeholder=\"e.g. 5\" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
+                  <input style={inputStyle} type="number" placeholder="e.g. 5" value={formData.pieces} onChange={e => set('pieces', e.target.value)} />
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Flight Number</label>
-                <input style={inputStyle} placeholder=\"e.g. EK123\" value={formData.flight_number} onChange={e => set('flight_number', e.target.value)} />
+                <input style={inputStyle} placeholder="e.g. EK123" value={formData.flight_number} onChange={e => set('flight_number', e.target.value)} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label style={labelStyle}>Origin (e.g. MAN)</label>
-                  <input style={inputStyle} placeholder=\"e.g. MAN\" value={formData.origin} onChange={e => set('origin', e.target.value)} />
+                  <input style={inputStyle} placeholder="e.g. MAN" value={formData.origin} onChange={e => set('origin', e.target.value)} />
                 </div>
                 <div>
                   <label style={labelStyle}>Destination (e.g. DXB)</label>
-                  <input style={inputStyle} placeholder=\"e.g. DXB\" value={formData.destination} onChange={e => set('destination', e.target.value)} />
+                  <input style={inputStyle} placeholder="e.g. DXB" value={formData.destination} onChange={e => set('destination', e.target.value)} />
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Comments</label>
-                <textarea value={formData.notes} onChange={e => set('notes', e.target.value)} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder=\"e.g. seal missing, cart 13\" />
+                <textarea value={formData.notes} onChange={e => set('notes', e.target.value)} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder="e.g. seal missing, cart 13" />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Signature (initials)</label>
-                <input style={inputStyle} placeholder=\"e.g. RR\" value={formData.signature} onChange={e => set('signature', e.target.value)} maxLength={10} />
+                <input style={inputStyle} placeholder="e.g. RR" value={formData.signature} onChange={e => set('signature', e.target.value)} maxLength={10} />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Flight Date</label>
-                <input style={inputStyle} type=\"date\" value={formData.date_received} onChange={e => set('date_received', e.target.value)} />
+                <input style={inputStyle} type="date" value={formData.date_received} onChange={e => set('date_received', e.target.value)} />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>📷 Confirmation Photo (optional)</label>
-                <input ref={fileInputRef} type=\"file\" accept=\"image/*\" capture=\"environment\" onChange={handlePhotoChange} style={{ display: 'none' }} />
-                <button type=\"button\" onClick={() => fileInputRef.current?.click()} style={{ ...inputStyle, cursor: 'pointer', textAlign: 'center', background: '#f9fafb', borderStyle: 'dashed' }}>
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                <button type="button" onClick={() => fileInputRef.current?.click()} style={{ ...inputStyle, cursor: 'pointer', textAlign: 'center', background: '#f9fafb', borderStyle: 'dashed' }}>
                   {photoPreview ? '✅ Photo Attached (click to change)' : '📷 Click to take/choose photo'}
                 </button>
                 {photoPreview && (
                   <div style={{ marginTop: 8, border: '2px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
-                    <img src={photoPreview} alt=\"Preview\" style={{ width: '100%', maxHeight: 200, objectFit: 'contain' }} />
+                    <img src={photoPreview} alt="Preview" style={{ width: '100%', maxHeight: 200, objectFit: 'contain' }} />
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button type=\"submit\" disabled={loading} style={{ flex: 1, padding: '12px', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer' }}>
                   {loading ? 'Saving...' : '✅ Save Entry'}
                 </button>
-                <button type=\"button\" onClick={() => { setFormData({ bar_number: '', pieces: '', flight_number: '', origin: '', destination: '', signature: '', notes: '', date_received: new Date().toISOString().split('T')[0], photo: null }); setPhotoPreview(null); }} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                <button type="button" onClick={() => { setFormData({ bar_number: '', pieces: '', flight_number: '', origin: '', destination: '', signature: '', notes: '', date_received: new Date().toISOString().split('T')[0], photo: null }); setPhotoPreview(null); }} style={{ padding: '12px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
                   ✕ Clear
                 </button>
               </div>
             </form>
           </div>
 
-          <div className=\"info-panel\" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden', alignSelf: 'flex-start' }}>
+          <div className="info-panel" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden', alignSelf: 'flex-start' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', background: '#fafafa' }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1f2937' }}>Information</h2>
             </div>
