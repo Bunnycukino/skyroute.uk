@@ -86,16 +86,28 @@ export async function POST(req: NextRequest) {
           is_rw_flight: false,
           month_year: monthYear,
           created_by: user,
-          created_at: entryDate.toISOString(),
-          status: body.status || 'ok',
-          seals_intact: body.seals_intact !== undefined ? body.seals_intact : true,
-          all_parts_returned: body.all_parts_returned !== undefined ? body.all_parts_returned : true,
-          items_returned: body.items_returned !== undefined ? body.items_returned : true
+          created_at: entryDate.toISOString()
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Try to add status fields (will fail silently if columns don't exist yet)
+      if (body.status && body.status !== 'ok') {
+        try {
+          await supabase.from('entries')
+            .update({
+              status: body.status || 'ok',
+              seals_intact: body.seals_intact !== undefined ? body.seals_intact : true,
+              all_parts_returned: body.all_parts_returned !== undefined ? body.all_parts_returned : true,
+              items_returned: body.items_returned !== undefined ? body.items_returned : true
+            })
+            .eq('id', result.id);
+        } catch (statusErr) {
+          console.error('[STATUS] Could not save status fields:', statusErr);
+        }
+      }
 
       // Trigger email notification if status is ISSUE or MISSING
       const entryStatus = body.status || 'ok';
